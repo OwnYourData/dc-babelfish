@@ -1,0 +1,7 @@
+{
+  "name": "My Object",
+  "collection-id": 4,
+  "meta": {
+    "schema": "HoneyBatch"
+  }
+}
