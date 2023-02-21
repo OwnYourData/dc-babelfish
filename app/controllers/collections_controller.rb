@@ -41,6 +41,10 @@ class CollectionsController < ApplicationController
             meta = JSON.parse(meta) rescue nil
         end
         meta = meta.transform_keys(&:to_s)
+        if !data["meta"].nil?
+            meta = meta.merge(data["meta"])
+            data = data.except("meta")
+        end        
         if meta["type"] != "collection"
             render json: {"error": "not found"},
                    status: 404

@@ -17,7 +17,7 @@ gw_host = os.getenv('GW_HOST') or "http://localhost:3100"
 os.environ["GW_HOST"] = gw_host
 
 cwd = os.getcwd()
-@pytest.mark.parametrize('input',  sorted(glob.glob(cwd+'/01_input/*.doc')))
+@pytest.mark.parametrize('input',  sorted(glob.glob(cwd+'/03_input/*.doc')))
 def test_01_organisations(fp, input):
     fp.allow_unregistered(True)
     with open(input) as f:

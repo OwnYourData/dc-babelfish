@@ -1,5 +1,9 @@
 class ServicesController < ApplicationController
     include ApplicationHelper
+    include BabelfishHelper
+
+    # [:page, :search, :read] have public access
+    before_action -> { doorkeeper_authorize! :write, :admin }, only: [:create, :update, :delete]
 
     def page
         retVal = [
@@ -11,34 +15,164 @@ class ServicesController < ApplicationController
 
     end
 
+    def search
+        retVal = [
+          {"service-id": 1, "name": "DID Lint"}
+        ]
+        render json: retVal,
+               status: 200
+
+    end
+
     def read
-        retVal = {
-          "service-id": 1,
-          "interface": {
-            "info": { "title": "DID Lint" },
-            "servers": [{"url": "https://didlint.ownyourdata.eu"}],
-            "party": "data_consumer",
-            "paths": {
-              "/api/validate": {
-                "post": {
-                  "requestBody": {
-                    "content": {
-                      "application/json": {
-                        "schema": {} 
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "data": nil,
-          "governance": {
-            "dpv:hasProcessing": ["dpv:Use"],
-            "dpv:hasPurpose": "dpv:Purpose",
-            "dpv:hasExpiryTime": "6 months"
-          }
+        id = params[:id]
+        show_meta = params[:show_meta]
+        @store = Store.find(id) rescue nil
+        if @store.nil?
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        data = @store.item
+        meta = @store.meta
+        if !(data.is_a?(Hash) || data.is_a?(Array))
+            data = JSON.parse(data) rescue nil
+        end
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        if meta["type"] != "service"
+            render json: {"error": "not found"},
+                   status: 404
+        else
+            if show_meta.to_s == "TRUE"
+                retVal = meta.merge({"dri" => @store.dri})
+            else
+                retVal = data
+            end
+            render json: retVal.merge({"service-id" => @store.id}),
+                   status: 200
+        end
+
+        # retVal = {
+        #   "service-id": 1,
+        #   "interface": {
+        #     "info": { "title": "DID Lint" },
+        #     "servers": [{"url": "https://didlint.ownyourdata.eu"}],
+        #     "party": "data_consumer",
+        #     "paths": {
+        #       "/api/validate": {
+        #         "post": {
+        #           "requestBody": {
+        #             "content": {
+        #               "application/json": {
+        #                 "schema": {} 
+        #               }
+        #             }
+        #           }
+        #         }
+        #       }
+        #     }
+        #   },
+        #   "data": nil,
+        #   "governance": {
+        #     "dpv:hasProcessing": ["dpv:Use"],
+        #     "dpv:hasPurpose": "dpv:Purpose",
+        #     "dpv:hasExpiryTime": "6 months"
+        #   }
+        # }
+        # render json: retVal,
+        #        status: 200
+
+    end
+
+    def create
+        # input
+        data = params.except(:controller, :action, :service)
+        if !data["_json"].nil?
+            data = data["_json"]
+        end
+        meta = {
+            "type": "service",
+            "organization-id": doorkeeper_org
         }
+        dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
+
+        # validate
+
+        # write
+        @store = Store.find_by_dri(dri)
+        if @store.nil?
+            @store = Store.new(item: data.to_json, meta: meta.to_json, dri: dri)
+            @store.save
+        end
+        service_name = data["interface"]["info"]["title"].to_s rescue nil
+        if service_name.nil?
+            retVal = {"service-id": @store.id}
+        else
+            retVal = {"service-id": @store.id, "name": service_name}
+        end
+        render json: retVal,
+               status: 200
+
+    end
+
+    def update
+        # input
+        id = params[:id]
+        data = params.permit!.except(:controller, :action, :service, :id).transform_keys(&:to_s)
+        if !data["_json"].nil?
+            data = data["_json"]
+        end
+
+        # validate
+        @store = Store.find(id)
+        if @store.nil?
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        meta = @store.meta
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        meta = meta.transform_keys(&:to_s)
+        if meta["type"] != "service"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["organization-id"].to_s != doorkeeper_org
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+        if !data["meta"].nil?
+            meta = meta.merge(data["meta"])
+            data = data.except("meta")
+        end        
+
+        dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
+        if Store.find_by_dri(dri).nil?
+            # update data
+            @store.item = data.to_json
+            @store.meta = meta.to_json
+            @store.dri = dri
+            if @store.save
+                render json: {"service-id": @store.id},
+                       status: 200
+            else
+                render json: {"error": "cannot save update"},
+                       status: 400
+            end
+        else
+            render json: {"error": "cannot save update"},
+                   status: 404
+        end
+    end
+
+    def delete
+        retVal = {"service-id": 1, "name": "DID Lint"}
         render json: retVal,
                status: 200
 

@@ -1,0 +1,1 @@
+curl -s -H "Authorization: Bearer $MASTER_TOKEN" $GW_HOST/user/12 | jq -r '."user-id"'

@@ -231,6 +231,18 @@ class ObjectsController < ApplicationController
                status: 200
     end
 
+    def access
+        retVal = {
+          "object-id": 1,
+          "collection-id": 1,
+          "name": "My Object",
+          "access": true
+        }
+        render json: retVal,
+               status: 200
+
+    end
+
     def object
         id = params[:id]
         @store = Store.find(id)
@@ -270,5 +282,12 @@ class ObjectsController < ApplicationController
         end
         render json: payload,
                status: 200
+    end
+
+    def delete
+        retVal = {"object-id": 1, "collection-id": 1}
+        render json: retVal,
+               status: 200
+
     end
 end

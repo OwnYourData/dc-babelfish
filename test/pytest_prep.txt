@@ -1,0 +1,11 @@
+# run before pytest on localhost
+export GW_HOST="http://localhost:3100"
+export APP_KEY="rkgYEN5QXmsFcwbH-awWoo9Q5BJd6vdGoyzRHI0lOZs"
+export APP_SECRET="AoaoR9-Aj7woafUW7hnARWVbNqaBxINiqteyMDMuBoA"
+export MASTER_TOKEN=`curl -s -d grant_type=client_credentials -d client_id=$APP_KEY -d client_secret=$APP_SECRET -d scope=admin -X POST http://localhost:3100/oauth/token | jq -r '.access_token'`
+
+# run before pytest on babelfish.data-container
+export GW_HOST="https://babelfish.data-container.net"
+export APP_KEY="rkgYEN5QXmsFcwbH-awWoo9Q5BJd6vdGoyzRHI0lOZs"
+export APP_SECRET="AoaoR9-Aj7woafUW7hnARWVbNqaBxINiqteyMDMuBoA"
+export MASTER_TOKEN=`curl -s -d grant_type=client_credentials -d client_id=$APP_KEY -d client_secret=$APP_SECRET -d scope=admin -X POST https://babelfish.data-container.net/oauth/token | jq -r '.access_token'`

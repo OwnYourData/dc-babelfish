@@ -1,15 +1,31 @@
 class UsersController < ApplicationController
     include ApplicationHelper
+    include BabelfishHelper
+
+    before_action -> { doorkeeper_authorize! :write, :admin }, only: [:create, :update, :delete]
+    before_action -> { doorkeeper_authorize! :read, :write, :admin }, only: [:read, :wallet]
 
     def create
         data = params.except(:controller, :action, :user)
         meta = {
             "type": "user"
         }
+        org_id = data["organization-id"]
+
+        if doorkeeper_org != org_id.to_s && doorkeeper_scope != "admin"
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+        if data["name"].to_s == ""
+            render json: {"error": "invalid 'name'"},
+                   status: 400
+            return
+        end
+
         dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
         @store = Store.find_by_dri(dri)
         if @store.nil?
-            org_id = data["organization-id"]
             if org_id.to_s == ""
                 render json: {"error": "missing 'organization-id'"},
                        status: 400
@@ -25,9 +41,34 @@ class UsersController < ApplicationController
             @store.save
         end
 
-        retVal = {"user-id": @store.id, "name": data["name"].to_s, "organization-id": org_id}
+        # create entry in Doorkeeper::Application
+        @org = Store.find(org_id)
+        @dk = Doorkeeper::Application.where(name: data["name"].to_s, organization_id: org_id).first rescue nil
+        if @dk.nil?
+            @dk = Doorkeeper::Application.new(
+                name: data["name"].to_s, 
+                organization_id: org_id, 
+                scopes: "read write", 
+                redirect_uri: 'urn:ietf:wg:oauth:2.0:oob')
+            @dk.save
+        end
+
+        if !@dk.nil? && @dk.uid.to_s != ""
+            retVal = {"user-id": @store.id, "name": data["name"].to_s, "organization-id": org_id, "oauth": {"client-id": @dk.uid.to_s, "client-secret": @dk.secret.to_s}}
+            render json: retVal,
+                   status: 200
+        else
+            render json: {"error": "cannot create user'"},
+                   status: 500
+        end
+
+    end
+
+    def update
+        retVal = {"user-id": 1, "name": "John Doe"}
         render json: retVal,
                status: 200
+
     end
 
     def read
@@ -49,7 +90,14 @@ class UsersController < ApplicationController
             if meta["type"] != "user"
                 render json: {"error": "not found"},
                        status: 404
-            else                
+            else
+                org_id = data["organization-id"]
+                if doorkeeper_org != org_id.to_s && doorkeeper_scope != "admin"
+                    render json: {"error": "Not authorized"},
+                           status: 401
+                    return
+                end
+
                 if show_meta.to_s == "TRUE"
                     retVal = meta.merge({"dri" => @store.dri})
                 else
@@ -59,5 +107,23 @@ class UsersController < ApplicationController
                        status: 200
             end
         end
+    end
+
+    def wallet
+        retVal = {
+          "user-id": 1,
+          "dlt": [
+            {
+              "type": "Convex",
+              "network": "testnet",
+              "address": 48,
+              "public-key": "0x82AbBf6EBb20cB21dB02375270b9C2078c2e09e9D7C492be6439c61F23917022",
+              "balance": 96816794
+            }
+          ]
+        }
+        render json: retVal,
+               status: 200
+
     end
 end
