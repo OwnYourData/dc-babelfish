@@ -134,25 +134,28 @@ oydid vp-push -l babelfish.data-container.net \
 
 # create HoneyBatch Object ====
 # create collection ---
-cat col.json | curl -H "Content-Type: application/json" -d @- -X POST https://babelfish.data-container.net/collection/
+export HONEY_USER_KEY="-KuMFN5Qqbf-Ls6w2Y6Tr50Ob5F5NOpogsHHvWWdoCU"
+export HONEY_USER_SECRET="YE4PDxX1mpYq-xlk8HnMBozzLrBLe3qCZLYb27qGikU"
+export HONEY_TOKEN=`curl -s -d grant_type=client_credentials -d client_id=$HONEY_USER_KEY -d client_secret=$HONEY_USER_SECRET -d scope=write -X POST https://babelfish.data-container.net/oauth/token | jq -r '.access_token'`
+cat col.json | curl -H "Content-Type: application/json" -H "Authorization: Bearer $HONEY_TOKEN" -d @- -X POST https://babelfish.data-container.net/collection/
 
 # read collection
-curl https://babelfish.data-container.net/collection/4
-curl https://babelfish.data-container.net/collection/4/meta
+curl -H "Authorization: Bearer $HONEY_TOKEN" https://babelfish.data-container.net/collection/18
+curl -H "Authorization: Bearer $HONEY_TOKEN" https://babelfish.data-container.net/collection/18/meta
 
 # create object (honey batch) ---
 # create object
-cat obj.json | curl -H "Content-Type: application/json" -d @- -X POST https://babelfish.data-container.net/object/
+cat obj.json | curl -H "Content-Type: application/json" -H "Authorization: Bearer $HONEY_TOKEN" -d @- -X POST https://babelfish.data-container.net/object/
 
 # write payload (incl. reference to D2A)
-cat honey_data.json | curl -H "Content-Type: application/json" -d @- -X PUT https://babelfish.data-container.net/object/5/write
+cat honey_data.json | curl -H "Content-Type: application/json" -H "Authorization: Bearer $HONEY_TOKEN" -d @- -X PUT https://babelfish.data-container.net/object/19/write
 
 # read object
-curl https://babelfish.data-container.net/object/5
-curl https://babelfish.data-container.net/object/5/meta
-curl https://babelfish.data-container.net/object/5/read
+curl -H "Authorization: Bearer $HONEY_TOKEN" https://babelfish.data-container.net/object/19
+curl -H "Authorization: Bearer $HONEY_TOKEN" https://babelfish.data-container.net/object/19/meta
+curl -H "Authorization: Bearer $HONEY_TOKEN" https://babelfish.data-container.net/object/19/read
 
 # create DID for honey batch
-echo '[{"id":"#payload", "type": "data", "serviceEndpoint": "https://babelfish.data-container.net/api/data?dri=zQmNbJonvpqhv9Vf3GRXMeQN9PurJsnYq3M4BaQSw2PWKkd"}]' | oydid create --doc-pwd hbpwd --rev-pwd hbpwd2 -l babelfish.data-container.net -s
-# DID: did:oyd:zQme9vsJe1HjfUSBXNccaKJ5m7qBCjKUR7qBn2hXDCsyh6U%40babelfish.data-container.net
+echo '[{"id":"#payload", "type": "data", "serviceEndpoint": "https://babelfish.data-container.net/api/data?dri=zQmcftHUW3gxf6dKxcvFJCa5AHqDpzquXVKaWretnmvzyPH"}]' | oydid create --doc-pwd hbpwd --rev-pwd hbpwd2 -l babelfish.data-container.net -s
+# DID: did:oyd:zQmYNVHASFC8jwo6pQxDiRAwxC9PxCkFoacMEo4eNXGBFZ2%40babelfish.data-container.net
 

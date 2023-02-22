@@ -1,5 +1,9 @@
 class CollectionsController < ApplicationController
     include ApplicationHelper
+    include BabelfishHelper
+
+    before_action -> { doorkeeper_authorize! :write, :admin }, only: [:create, :update, :delete]
+    before_action -> { doorkeeper_authorize! :read, :write, :admin }, only: [:read, :list]
 
     def create
         data = params.except(:controller, :action, :collection)
@@ -7,7 +11,8 @@ class CollectionsController < ApplicationController
             data = data["_json"]
         end
         meta = {
-            "type": "collection"
+            "type": "collection",
+            "organization-id": doorkeeper_org
         }
         dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
         @store = Store.find_by_dri(dri)
@@ -50,6 +55,12 @@ class CollectionsController < ApplicationController
                    status: 404
             return
         end
+        if meta["organization-id"] != doorkeeper_org
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+
         dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
         if Store.find_by_dri(dri).nil?
             # update data
@@ -93,18 +104,44 @@ class CollectionsController < ApplicationController
             if meta["type"] != "collection"
                 render json: {"error": "not found"},
                        status: 404
-            else                
-                if show_meta.to_s == "TRUE"
-                    retVal = meta.merge({"dri" => @store.dri})
-                else
-                    retVal = data
-                end
-                if retVal.is_a?(Array)
-                    retVal={"collection": retVal}
-                end
-                render json: retVal.merge({"collection-id" => @store.id}),
-                       status: 200
+                return
             end
+            if meta["organization-id"] != doorkeeper_org
+                render json: {"error": "Not authorized"},
+                       status: 401
+                return
+            end
+
+            if show_meta.to_s == "TRUE"
+                retVal = meta.merge({"dri" => @store.dri})
+            else
+                retVal = data
+            end
+            if retVal.is_a?(Array)
+                retVal={"collection": retVal}
+            end
+            render json: retVal.merge({"collection-id" => @store.id}),
+                   status: 200
         end
+    end
+
+    def list
+        retVal=[
+          {"collection-id": 1, "name": "My Repository"},
+          {"collection-id": 2, "name": "Repository 2"}
+        ]
+        render json: retVal,
+               status: 200
+
+    end
+
+    def delete
+        retVal={
+          "collection-id": 1,
+          "name": "My Repository"
+        }
+        render json: retVal,
+               status: 200
+
     end
 end

@@ -1,5 +1,9 @@
 class ObjectsController < ApplicationController
     include ApplicationHelper
+    include BabelfishHelper
+
+    before_action -> { doorkeeper_authorize! :write, :admin }, only: [:create, :write, :update, :delete]
+    before_action -> { doorkeeper_authorize! :read, :write, :admin }, only: [:read, :object, :access]
 
     def create
         data = params.permit!.except(:controller, :action, :object).transform_keys(&:to_s)
@@ -7,7 +11,8 @@ class ObjectsController < ApplicationController
             data = data["_json"]
         end
         meta = {
-            "type": "object"
+            "type": "object",
+            "organization-id": doorkeeper_org
         }
         if !data["meta"].nil?
             meta = meta.merge(data["meta"])
@@ -35,6 +40,12 @@ class ObjectsController < ApplicationController
                    status: 400
             return
         end
+        if col_meta["organization-id"] != doorkeeper_org
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+
         @store = Store.find_by_dri(dri)
         if @store.nil?
             @store = Store.new(item: data.to_json, meta: meta.to_json, dri: dri)
@@ -68,6 +79,11 @@ class ObjectsController < ApplicationController
         if meta["type"] != "object"
             render json: {"error": "not found"},
                    status: 404
+            return
+        end
+        if meta["organization-id"] != doorkeeper_org
+            render json: {"error": "Not authorized"},
+                   status: 401
             return
         end
         if !data["meta"].nil?
@@ -105,6 +121,11 @@ class ObjectsController < ApplicationController
         if col_meta["type"] != "collection"
             render json: {"error": "invalid 'collection-id'"},
                    status: 400
+            return
+        end
+        if col_meta["organization-id"] != doorkeeper_org
+            render json: {"error": "Not authorized"},
+                   status: 401
             return
         end
         dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
@@ -155,6 +176,11 @@ class ObjectsController < ApplicationController
         if meta["type"] != "object"
             render json: {"error": "not found"},
                    status: 404
+            return
+        end
+        if meta["organization-id"] != doorkeeper_org
+            render json: {"error": "Not authorized"},
+                   status: 401
             return
         end
         col_id = data["collection-id"]
@@ -222,6 +248,11 @@ class ObjectsController < ApplicationController
                    status: 404
             return
         end
+        if meta["organization-id"] != doorkeeper_org
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
         if show_meta.to_s == "TRUE"
             retVal = meta.merge({"dri" => @store.dri})
         else
@@ -262,6 +293,11 @@ class ObjectsController < ApplicationController
         if meta["type"] != "object"
             render json: {"error": "not found"},
                    status: 404
+            return
+        end
+        if meta["organization-id"] != doorkeeper_org
+            render json: {"error": "Not authorized"},
+                   status: 401
             return
         end
         payload_dri = data["payload"].to_s

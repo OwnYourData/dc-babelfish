@@ -8,7 +8,8 @@ class UsersController < ApplicationController
     def create
         data = params.except(:controller, :action, :user)
         meta = {
-            "type": "user"
+            "type": "user",
+            "organization-id": doorkeeper_org
         }
         org_id = data["organization-id"]
 
@@ -37,9 +38,11 @@ class UsersController < ApplicationController
                        status: 400
                 return
             end
-            @store = Store.new(item: data.to_json, meta: meta.to_json, dri: dri)
-            @store.save
+            @store = Store.new(item: data.to_json, meta: meta.to_json, dri: dri, key: "user_" + org_id.to_s)
+        else
+            @store.key = "user_" + org_id.to_s
         end
+        @store.save
 
         # create entry in Doorkeeper::Application
         @org = Store.find(org_id)
@@ -74,7 +77,7 @@ class UsersController < ApplicationController
     def read
         id = params[:id]
         show_meta = params[:show_meta]
-        @store = Store.find(id)
+        @store = Store.find(id) rescue nil
         if @store.nil?
             render json: {"error": "not found"},
                    status: 404
@@ -110,18 +113,51 @@ class UsersController < ApplicationController
     end
 
     def wallet
-        retVal = {
-          "user-id": 1,
-          "dlt": [
-            {
-              "type": "Convex",
-              "network": "testnet",
-              "address": 48,
-              "public-key": "0x82AbBf6EBb20cB21dB02375270b9C2078c2e09e9D7C492be6439c61F23917022",
-              "balance": 96816794
-            }
-          ]
-        }
+        id = params[:id]
+        @store = Store.find(id) rescue nil
+        if @store.nil?
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        data = @store.item
+        meta = @store.meta
+        if !(data.is_a?(Hash) || data.is_a?(Array))
+            data = JSON.parse(data) rescue nil
+        end
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        if meta["type"] != "user"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        org_id = data["organization-id"]
+        if doorkeeper_org != org_id.to_s && doorkeeper_scope != "admin"
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+        retVal = {"user-id": @store.id}
+        @dk = Doorkeeper::Application.where(name: data["name"], organization_id: org_id)
+        if @dk.length > 0
+            @dk = @dk.first
+            retVal["oauth"] = {"client-id": @dk.uid, "client-secret": @dk.secret}
+        end
+        retVal["dlt"] = ["not yet available"]
+        # {
+        #   "user-id": 1,
+        #   "dlt": [
+        #     {
+        #       "type": "Convex",
+        #       "network": "testnet",
+        #       "address": 48,
+        #       "public-key": "0x82AbBf6EBb20cB21dB02375270b9C2078c2e09e9D7C492be6439c61F23917022",
+        #       "balance": 96816794
+        #     }
+        #   ]
+        # }        
         render json: retVal,
                status: 200
 
