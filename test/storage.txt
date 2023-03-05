@@ -9,18 +9,19 @@ cd ../pytest
 pytest
 cd ../test
 
-cat service.json | curl -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d @- -X POST http://localhost:3100/service/
+cat col.json | curl -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d @- -X POST http://localhost:3100/collection/
 
-curl -s http://localhost:3100/service/8
+cat obj.json | curl -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d @- -X POST http://localhost:3100/object/
 
-cat service.json | curl -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" -d @- -X PUT http://localhost:3100/service/4
 
-curl -H "Authorization: Bearer $USER_TOKEN" -X DELETE http://localhost:3100/service/8
+curl  -H "Authorization: Bearer $USER_TOKEN" -s http://localhost:3100/collection/8
+curl  -H "Authorization: Bearer $USER_TOKEN" -s http://localhost:3100/object/9
 
-for i in {1..30}; do curl -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d "{\"interface\":{\"info\":{\"title\":\"service_$i\"}},\"data\":null,\"governance\":null}" -X POST http://localhost:3100/service; done
+curl -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -X DELETE http://localhost:3100/object/9
+curl -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -X DELETE http://localhost:3100/collection/8
 
-curl "http://localhost:3100/list?page=2&items=2&sort=name"
+curl  -H "Authorization: Bearer $USER_TOKEN" -s http://localhost:3100/object/9
+curl -H "Authorization: Bearer $USER_TOKEN" -X DELETE http://localhost:3100/collection/8
 
-curl "http://localhost:3100/service/search?title=dummy"
 
-curl http://localhost:3100/service/5
+curl -H "Authorization: Bearer $USER_TOKEN" http://localhost:3100/collection/list

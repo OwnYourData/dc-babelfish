@@ -33,9 +33,10 @@ class OrganizationsController < ApplicationController
                 redirect_uri: 'urn:ietf:wg:oauth:2.0:oob')
             @dk.save
         end
-        data = {"name": "admin", "organization-id": org_id}
+        data = {"name": "admin"}
         meta = {
-            "type": "user"
+            "type": "user",
+            "organization-id": org_id
         }
         dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
         @store = Store.find_by_dri(dri)
@@ -61,41 +62,142 @@ class OrganizationsController < ApplicationController
         if @store.nil?
             render json: {"error": "not found"},
                    status: 404
-        else
-            data = @store.item
-            meta = @store.meta
-            if !(data.is_a?(Hash) || data.is_a?(Array))
-                data = JSON.parse(data) rescue nil
-            end
-            if !(meta.is_a?(Hash) || meta.is_a?(Array))
-                meta = JSON.parse(meta) rescue nil
-            end
-            if meta["type"] != "organization"
-                render json: {"error": "not found"},
-                       status: 404
-            else
-                if show_meta.to_s == "TRUE"
-                    retVal = meta.merge({"dri" => @store.dri})
-                else
-                    retVal = data
-                end
-                render json: retVal.merge({"organization-id" => @store.id}),
-                       status: 200
-            end
+            return
         end
+        data = @store.item
+        meta = @store.meta
+        if !(data.is_a?(Hash) || data.is_a?(Array))
+            data = JSON.parse(data) rescue nil
+        end
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        if meta["type"] != "organization"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if show_meta.to_s == "TRUE"
+            retVal = meta.merge({"dri" => @store.dri})
+        else
+            retVal = data
+        end
+        render json: retVal.merge({"organization-id" => @store.id}),
+               status: 200
+
     end
 
     def update
-        retVal = {"organization-id": 1, "name": "ACME Inc."}
-        render json: retVal,
-               status: 200
+        # input
+        id = params[:id]
+        data = params.permit!.except(:controller, :action, :collection, :id).transform_keys(&:to_s)
+        if !data["_json"].nil?
+            data = data["_json"]
+        end
+
+        # validate
+        @store = Store.find(id)
+        if @store.nil?
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        meta = @store.meta
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        meta = meta.transform_keys(&:to_s)
+        if meta["type"] != "organization"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["organization-id"] != doorkeeper_org && doorkeeper_scope != "admin"
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+        if !data["meta"].nil?
+            meta = meta.merge(data["meta"])
+            data = data.except("meta")
+        end        
+
+        dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
+        if Store.find_by_dri(dri).nil?
+            # update data
+            @store.item = data.to_json
+            @store.meta = meta.to_json
+            @store.dri = dri
+            if @store.save
+                render json: {"organization-id": @store.id, "name": data["name"].to_s},
+                       status: 200
+            else
+                render json: {"error": "cannot save update"},
+                       status: 400
+            end
+        else
+            render json: {"error": "cannot save update"},
+                   status: 404
+        end
 
     end
 
     def delete
-        retVal = {"organization-id": 1, "name": "ACME Inc."}
-        render json: retVal,
-               status: 200
+        # input
+        id = params[:id]
+
+        # validate
+        @store = Store.find(id)
+        if @store.nil?
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        data = @store.item
+        meta = @store.meta
+        if !(data.is_a?(Hash) || data.is_a?(Array))
+            data = JSON.parse(data) rescue nil
+        end
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        meta = meta.transform_keys(&:to_s)
+        if meta["type"] != "organization"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if @store.id.to_s != doorkeeper_org && doorkeeper_scope != "admin"
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+
+        meta = meta.merge("delete": true)
+        @store.meta = meta.to_json
+        @store.dri = nil
+        if @store.save
+            render json: {"user-id": @store.id, "name": data["name"].to_s},
+                   status: 200
+        else
+            render json: {"error": "cannot delete"},
+                   status: 400
+        end
 
     end
 
@@ -129,7 +231,9 @@ class OrganizationsController < ApplicationController
             if !(data.is_a?(Hash) || data.is_a?(Array))
                 data = JSON.parse(data) rescue {}
             end
-            retVal << {"user-id": org.id, "name": data["name"].to_s}
+            if meta["delete"].to_s.downcase != "true"
+                retVal << {"user-id": org.id, "name": data["name"].to_s}
+            end
         end unless @orgs.nil?
         render json: retVal,
                status: 200

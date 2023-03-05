@@ -9,18 +9,6 @@ cd ../pytest
 pytest
 cd ../test
 
-cat service.json | curl -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d @- -X POST http://localhost:3100/service/
+echo '{"name":"ACME1 Inc.","description":"information about organisation","address":"street number, zip code, city, country"}' | curl -H "Content-Type: application/json" -H "Authorization: Bearer $MASTER_TOKEN" -d @- -X POST $GW_HOST/organization/
 
-curl -s http://localhost:3100/service/8
-
-cat service.json | curl -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" -d @- -X PUT http://localhost:3100/service/4
-
-curl -H "Authorization: Bearer $USER_TOKEN" -X DELETE http://localhost:3100/service/8
-
-for i in {1..30}; do curl -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d "{\"interface\":{\"info\":{\"title\":\"service_$i\"}},\"data\":null,\"governance\":null}" -X POST http://localhost:3100/service; done
-
-curl "http://localhost:3100/list?page=2&items=2&sort=name"
-
-curl "http://localhost:3100/service/search?title=dummy"
-
-curl http://localhost:3100/service/5
+curl -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -X DELETE http://localhost:3100/organization/8

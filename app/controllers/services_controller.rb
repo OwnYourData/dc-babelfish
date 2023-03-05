@@ -1,25 +1,61 @@
 class ServicesController < ApplicationController
     include ApplicationHelper
     include BabelfishHelper
+    include Pagy::Backend
+
+    Hash.include CoreExtensions
 
     # [:page, :search, :read] have public access
     before_action -> { doorkeeper_authorize! :write, :admin }, only: [:create, :update, :delete]
+    after_action { pagy_headers_merge(@pagy) if @pagy }
 
     def page
-        retVal = [
-            {"service-id": 1, "name": "DID Lint"},
-            {"service-id": 2, "name": "xyz"}
-        ]
-        render json: retVal,
-               status: 200
+        # uses RFC-8288 compliant http response headers (and other helpers) useful for API pagination
+        page = params[:page] || 1
+        if page == "all"
+            page = 1
+            items = Store.count
+        else
+            items = params[:items] || 20
+        end
+        @pagy, @records = pagy(Store.where(key: "service").select(:id, :item), page: page, items: items)
+        retVal = []
+        @records.each do |r|
+            service_name = r.transform_keys(&:to_s)["interface"]["info"]["title"].to_s rescue ""
+            retVal << {"service-id": r.id, "name": service_name}
+        end
+
+        # retVal = [
+        #     {"service-id": 1, "name": "DID Lint"},
+        #     {"service-id": 2, "name": "xyz"}
+        # ]
+        if params[:sort].to_s == "name"
+            render json: retVal.sort_by { |r| r["name"] },
+                   status: 200
+        else
+            render json: retVal,
+                   status: 200
+        end
 
     end
 
     def search
-        retVal = [
-          {"service-id": 1, "name": "DID Lint"}
-        ]
-        render json: retVal,
+        query = params.except(:controller, :action, :service)
+        @services = Store.where(key: "service")
+        retVal = []
+        query.each do |q|
+            @services.each do |s|
+                data = s.item
+                if !(data.is_a?(Hash) || data.is_a?(Array))
+                    data = JSON.parse(data) rescue nil
+                end
+                if data.deep_find(q.first.to_s).to_s == q.last
+                    service_name = data.transform_keys(&:to_s)["interface"]["info"]["title"].to_s rescue ""
+                    retVal << {"service-id": s.id, "name": service_name}
+                end
+            end     
+        end
+        render json: retVal.uniq,
                status: 200
 
     end
@@ -44,15 +80,20 @@ class ServicesController < ApplicationController
         if meta["type"] != "service"
             render json: {"error": "not found"},
                    status: 404
-        else
-            if show_meta.to_s == "TRUE"
-                retVal = meta.merge({"dri" => @store.dri})
-            else
-                retVal = data
-            end
-            render json: retVal.merge({"service-id" => @store.id}),
-                   status: 200
+            return
         end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if show_meta.to_s == "TRUE"
+            retVal = meta.merge({"dri" => @store.dri})
+        else
+            retVal = data
+        end
+        render json: retVal.merge({"service-id" => @store.id}),
+               status: 200
 
         # retVal = {
         #   "service-id": 1,
@@ -103,7 +144,10 @@ class ServicesController < ApplicationController
         # write
         @store = Store.find_by_dri(dri)
         if @store.nil?
-            @store = Store.new(item: data.to_json, meta: meta.to_json, dri: dri)
+            @store = Store.new(item: data.to_json, 
+                               meta: meta.to_json, 
+                               dri: dri,
+                               key: "service")
             @store.save
         end
         service_name = data["interface"]["info"]["title"].to_s rescue nil
@@ -142,6 +186,11 @@ class ServicesController < ApplicationController
                    status: 404
             return
         end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
         if meta["organization-id"].to_s != doorkeeper_org
             render json: {"error": "Not authorized"},
                    status: 401
@@ -172,9 +221,52 @@ class ServicesController < ApplicationController
     end
 
     def delete
-        retVal = {"service-id": 1, "name": "DID Lint"}
-        render json: retVal,
-               status: 200
+        # input
+        id = params[:id]
+
+        # validate
+        @store = Store.find(id)
+        if @store.nil?
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        data = @store.item
+        meta = @store.meta
+        if !(data.is_a?(Hash) || data.is_a?(Array))
+            data = JSON.parse(data) rescue nil
+        end
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        meta = meta.transform_keys(&:to_s)
+        if meta["type"] != "service"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["organization-id"].to_s != doorkeeper_org && doorkeeper_scope != "admin"
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+
+        meta = meta.merge("delete": true)
+        @store.meta = meta.to_json
+        @store.dri = nil
+        if @store.save
+            service_name = data["interface"]["info"]["title"].to_s rescue nil
+            render json: {"service-id": @store.id, "name": service_name.to_s},
+                   status: 200
+        else
+            render json: {"error": "cannot delete"},
+                   status: 400
+        end
 
     end
 

@@ -19,6 +19,7 @@ Rails.application.routes.draw do
 
     # Babelfish ===================
     # Service handling
+    match 'list',             to: 'services#page',   via: 'get'
     match 'list/count/page',  to: 'services#page',   via: 'get'
     match 'service/search',   to: 'services#search', via: 'get'
     match 'service/:id',      to: 'services#read',   via: 'get'
@@ -44,12 +45,13 @@ Rails.application.routes.draw do
     match 'user/:id',        to: 'users#delete', via: 'delete'
 
     # Collection handling
-    match 'collection/:id',      to: 'collections#read',   via: 'get'
-    match 'collection/:id/meta', to: 'collections#read',   via: 'get', defaults: { show_meta: "TRUE"}
-    match 'collection/list',     to: 'collections#list',   via: 'get'
-    match 'collection',          to: 'collections#create', via: 'post'
-    match 'collection/:id',      to: 'collections#update', via: 'put'
-    match 'collection/:id',      to: 'collections#delete', via: 'delete'
+    match 'collection/list',        to: 'collections#list',    via: 'get'
+    match 'collection/:id',         to: 'collections#read',    via: 'get'
+    match 'collection/:id/meta',    to: 'collections#read',    via: 'get', defaults: { show_meta: "TRUE"}
+    match 'collection/:id/objects', to: 'collections#objects', via: 'get'
+    match 'collection',             to: 'collections#create',  via: 'post'
+    match 'collection/:id',         to: 'collections#update',  via: 'put'
+    match 'collection/:id',         to: 'collections#delete',  via: 'delete'
 
     # Object handling
     match 'object/:id',                 to: 'objects#read',   via: 'get'

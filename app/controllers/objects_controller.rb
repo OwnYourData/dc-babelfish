@@ -48,7 +48,7 @@ class ObjectsController < ApplicationController
 
         @store = Store.find_by_dri(dri)
         if @store.nil?
-            @store = Store.new(item: data.to_json, meta: meta.to_json, dri: dri)
+            @store = Store.new(item: data.to_json, meta: meta.to_json, dri: dri, key: "object_" + col_id.to_s)
             @store.save
         end
 
@@ -77,6 +77,11 @@ class ObjectsController < ApplicationController
         end
         meta = meta.transform_keys(&:to_s)
         if meta["type"] != "object"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
             render json: {"error": "not found"},
                    status: 404
             return
@@ -178,6 +183,11 @@ class ObjectsController < ApplicationController
                    status: 404
             return
         end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
         if meta["organization-id"] != doorkeeper_org
             render json: {"error": "Not authorized"},
                    status: 401
@@ -248,6 +258,11 @@ class ObjectsController < ApplicationController
                    status: 404
             return
         end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
         if meta["organization-id"] != doorkeeper_org
             render json: {"error": "Not authorized"},
                    status: 401
@@ -263,14 +278,81 @@ class ObjectsController < ApplicationController
     end
 
     def access
+        object_id = params[:object_id]
+        user_id = params[:user_id]
+        @obj = Store.find(object_id)
+        @user = Store.find(user_id)
+        if @obj.nil?
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if @user.nil?
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        obj_data = @obj.item
+        obj_meta = @obj.meta
+        if !(obj_data.is_a?(Hash) || obj_data.is_a?(Array))
+            obj_data = JSON.parse(obj_data) rescue nil
+        end
+        if !(obj_meta.is_a?(Hash) || obj_meta.is_a?(Array))
+            obj_meta = JSON.parse(obj_meta) rescue nil
+        end
+        if obj_meta["type"] != "object"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if obj_meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        user_data = @obj.item
+        user_meta = @obj.meta
+        if !(user_data.is_a?(Hash) || user_data.is_a?(Array))
+            user_data = JSON.parse(user_data) rescue nil
+        end
+        if !(user_meta.is_a?(Hash) || user_meta.is_a?(Array))
+            user_meta = JSON.parse(user_meta) rescue nil
+        end
+        if user_meta["type"] != "user"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if user_meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
         retVal = {
-          "object-id": 1,
-          "collection-id": 1,
-          "name": "My Object",
+          "object-id": object_id,
+          "collection-id": user_id,
+          "name": obj_data["name"].to_s,
           "access": true
         }
+        status_code = 200
+        if user_meta["organization-id"] != doorkeeper_org
+            retVal = {
+              "object-id": object_id,
+              "collection-id": user_id,
+              "access": false
+            }
+            status_code = 401
+        end
+        if obj_meta["organization-id"] != doorkeeper_org
+            retVal = {
+              "object-id": object_id,
+              "collection-id": user_id,
+              "access": false
+            }
+            status_code = 401
+        end
         render json: retVal,
-               status: 200
+               status: status_code
 
     end
 
@@ -291,6 +373,11 @@ class ObjectsController < ApplicationController
             meta = JSON.parse(meta) rescue nil
         end
         if meta["type"] != "object"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
             render json: {"error": "not found"},
                    status: 404
             return
@@ -321,9 +408,53 @@ class ObjectsController < ApplicationController
     end
 
     def delete
-        retVal = {"object-id": 1, "collection-id": 1}
-        render json: retVal,
-               status: 200
+        # input
+        id = params[:id]
+
+        # validate
+        @store = Store.find(id)
+        if @store.nil?
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        data = @store.item
+        meta = @store.meta
+        if !(data.is_a?(Hash) || data.is_a?(Array))
+            data = JSON.parse(data) rescue nil
+        end
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        meta = meta.transform_keys(&:to_s)
+        if meta["type"] != "object"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["organization-id"].to_s != doorkeeper_org && doorkeeper_scope != "admin"
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+
+        meta = meta.merge("delete": true)
+        col_id = data["collection-id"]
+        @store.meta = meta.to_json
+        @store.dri = nil
+        col_id = 
+        if @store.save
+            render json: {"object-id": @store.id, "collection-id": col_id},
+                   status: 200
+        else
+            render json: {"error": "cannot delete"},
+                   status: 400
+        end
 
     end
 end

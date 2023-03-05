@@ -68,9 +68,83 @@ class UsersController < ApplicationController
     end
 
     def update
-        retVal = {"user-id": 1, "name": "John Doe"}
-        render json: retVal,
-               status: 200
+        # input
+        id = params[:id]
+        data = params.permit!.except(:controller, :action, :collection, :id).transform_keys(&:to_s)
+        if !data["_json"].nil?
+            data = data["_json"]
+        end
+
+        # validate
+        @store = Store.find(id)
+        if @store.nil?
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        orig_data = @store.item
+        meta = @store.meta
+        if !(orig_data.is_a?(Hash) || orig_data.is_a?(Array))
+            orig_data = JSON.parse(orig_data) rescue nil
+        end
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        meta = meta.transform_keys(&:to_s)
+        if meta["type"] != "user"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        org_id = meta["organization-id"].to_s
+        meta_oauth = false
+        data_meta_oauth = data["meta"]["oauth"].to_s rescue ""
+        if data_meta_oauth != ""
+            meta_oauth = true
+            input_meta = data["meta"].except("oauth")
+        end
+        if !input_meta.nil?
+            meta = meta.merge(input_meta)
+            data = data.except("meta")
+        end        
+        if meta["organization-id"] != doorkeeper_org && doorkeeper_scope != "admin"
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+        dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
+        if Store.find_by_dri(dri).nil?
+            # update data
+            @store.item = data.to_json
+            @store.meta = meta.to_json
+            @store.dri = dri
+            if @store.save
+                @dk = Doorkeeper::Application.where(name: orig_data["name"].to_s, organization_id: org_id).first rescue nil
+                if !@dk.nil?
+                    @dk.name = data["name"].to_s 
+                    @dk.organization_id = org_id
+                    if meta_oauth
+                        @dk.uid = SecureRandom.base58(43)
+                        @dk.secret = SecureRandom.base58(43)
+                    end
+                    @dk.save
+                end
+
+                render json: {"user-id": @store.id, "name": data["name"].to_s, "oauth": {"client-id": @dk.uid.to_s, "client-secret": @dk.secret.to_s}},
+                       status: 200
+            else
+                render json: {"error": "cannot save update"},
+                       status: 400
+            end
+        else
+            render json: {"error": "cannot save update"},
+                   status: 404
+        end  
 
     end
 
@@ -81,35 +155,40 @@ class UsersController < ApplicationController
         if @store.nil?
             render json: {"error": "not found"},
                    status: 404
-        else
-            data = @store.item
-            meta = @store.meta
-            if !(data.is_a?(Hash) || data.is_a?(Array))
-                data = JSON.parse(data) rescue nil
-            end
-            if !(meta.is_a?(Hash) || meta.is_a?(Array))
-                meta = JSON.parse(meta) rescue nil
-            end
-            if meta["type"] != "user"
-                render json: {"error": "not found"},
-                       status: 404
-            else
-                org_id = data["organization-id"]
-                if doorkeeper_org != org_id.to_s && doorkeeper_scope != "admin"
-                    render json: {"error": "Not authorized"},
-                           status: 401
-                    return
-                end
-
-                if show_meta.to_s == "TRUE"
-                    retVal = meta.merge({"dri" => @store.dri})
-                else
-                    retVal = data
-                end
-                render json: retVal.merge({"user-id" => @store.id}),
-                       status: 200
-            end
+            return
         end
+        data = @store.item
+        meta = @store.meta
+        if !(data.is_a?(Hash) || data.is_a?(Array))
+            data = JSON.parse(data) rescue nil
+        end
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        if meta["type"] != "user"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        org_id = data["organization-id"]
+        if doorkeeper_org != org_id.to_s && doorkeeper_scope != "admin"
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+
+        if show_meta.to_s == "TRUE"
+            retVal = meta.merge({"dri" => @store.dri})
+        else
+            retVal = data
+        end
+        render json: retVal.merge({"user-id" => @store.id}),
+               status: 200
     end
 
     def wallet
@@ -133,7 +212,12 @@ class UsersController < ApplicationController
                    status: 404
             return
         end
-        org_id = data["organization-id"]
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        org_id = meta["organization-id"]
         if doorkeeper_org != org_id.to_s && doorkeeper_scope != "admin"
             render json: {"error": "Not authorized"},
                    status: 401
@@ -162,4 +246,54 @@ class UsersController < ApplicationController
                status: 200
 
     end
+
+    def delete
+        # input
+        id = params[:id]
+
+        # validate
+        @store = Store.find(id)
+        if @store.nil?
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        data = @store.item
+        meta = @store.meta
+        if !(data.is_a?(Hash) || data.is_a?(Array))
+            data = JSON.parse(data) rescue nil
+        end
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        meta = meta.transform_keys(&:to_s)
+        if meta["type"] != "user"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["organization-id"].to_s != doorkeeper_org && doorkeeper_scope != "admin"
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+
+        meta = meta.merge("delete": true)
+        @store.meta = meta.to_json
+        @store.dri = nil
+        if @store.save
+            render json: {"user-id": @store.id, "name": data["name"].to_s},
+                   status: 200
+        else
+            render json: {"error": "cannot delete"},
+                   status: 400
+        end
+
+    end
+
 end
