@@ -1,6 +1,9 @@
 # Registering a Service
 
-API gateways are an essential component of modern software architecture that provide a unified point of entry to a collection of microservices. One of the primary functions of a gateway is to route incoming requests to the appropriate sevice. To do this, the gateway must have knowledge of the available services, their endpoints, and the corresponding request and response types. In this tutorial, we will demonstrate how to register a service description on the ONTOCHAIN Gateway API.
+*last update: 14 March 2023*  
+
+API gateways are an essential component of modern software architecture that provide a unified point of entry to a collection of microservices. One of the primary functions of a gateway is to route incoming requests to the appropriate sevice. To do this, the gateway must have knowledge of the available services, their endpoints, and the corresponding request and response types. In this tutorial, we will demonstrate how to register a service description on the ONTOCHAIN Gateway API.  
+Refer to the [Tutorial-Overview](https://github.com/OwnYourData/dc-babelfish/tree/main/tutorial) for other aspects.
 
 ### Content
 
