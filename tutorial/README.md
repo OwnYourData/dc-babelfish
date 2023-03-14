@@ -8,6 +8,8 @@ This page describes step-by-step instructions to demonstrate the various feature
 2. [Registering a Service](2_Services/README.md)  
     *Topics: step-by-step instructions to register your organisation and user at the Gateway API and publish a service in the Service Catalogue*
 
+&nbsp;
+
 ## Improve the Tutorial
 
 If you want to contribute pull requests, please follow these steps:
@@ -22,7 +24,6 @@ If you want to contribute pull requests, please follow these steps:
 ## About  
 
 <img align="right" src="https://raw.githubusercontent.com/OwnYourData/dc-babelfish/main/app/assets/images/logo-ngi-ontochain-positive.png" height="150">This project has received funding from the European Union’s Horizon 2020 research and innovation program through the [NGI ONTOCHAIN program](https://ontochain.ngi.eu/) under cascade funding agreement No 957338.
-
 
 <br clear="both" />
 
