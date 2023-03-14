@@ -8,8 +8,8 @@ API gateways are an essential component of modern software architecture that pro
 
 [0 - Prerequisites](#0---prerequisites)  
 [1 - Structure of a Service Description](#1---structure-of-a-service-description)  
-[2 - Creating a Service Description](#2---creating-a-service-description)  
-[3 - Testing and Maintenance](#3---testing-and-maintenance)
+[2 - Creating a Service in the Service Catalogue](#2---creating-a-service-description)  
+[3 - Discovery and Maintenance](#3---discovery-and-maintenance)
 
 &nbsp;
 
@@ -58,15 +58,17 @@ export SECRET="-insert client-secret from your user-"
 export TOKEN=`curl -s -d grant_type=client_credentials -d client_id=$KEY -d client_secret=$SECRET -d scope=write -X POST https://babelfish.data-container.net/oauth/token | jq -r '.access_token'`
 ```
 
+> *Note:* `jq` download and installation instructions [available here](https://stedolan.github.io/jq/download/)
+
 You can now use this token to access information on the Gateway API:
 
 ```bash=
 curl -H "Authorization: Bearer $TOKEN" https://babelfish.data-container.net/organization/current
 ```
-Response:    
-```json=
-{"organization-id":31,"name":"OwnYourData"}
-```
+> Response:    
+> ```json=
+> {"organization-id":31,"name":"OwnYourData"}
+> ```
 
 
 ## 1 - Structure of a Service Description
@@ -129,9 +131,58 @@ The Service Catalogue of the Gateway API comprises of all registered services. A
 }
 ```
 
-## 2 - Creating a Service Description
 
-## 3 - Testing and Maintenance
+## 2 - Creating a Service in the Service Catalogue
+
+To add a service to the Service Catalogue you need a bearer token (see [Prerequisites](#0---prerequisites)) and we assume `service.json` holds a service description as [described above](#1---structure-of-a-service-description). Use the following command to create a service on the command line:
+
+```bash=
+cat service.json | \
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d @- -X POST https://babelfish.data-container.net/service
+```
+
+> Response:
+> ```json=
+> {"service-id": 62, "name": "General Linter"}
+> ```
+
+
+## 3 - Discovery and Maintenance
+
+To discover services on the Gateway API use the following public API endpoints:
+
+* `GET /list` provides a paged list of the complete service catalogue  
+  example: https://babelfish.data-container.net/list  
+  (parameter usage: https://babelfish.data-container.net/list?page=1&items=20&sort=name)
+
+* `GET /service/search?field1=value1&field2=value2`  
+  example: https://babelfish.data-container.net/service/search?name=did%20lint
+
+* `GET /service/{SERVICE_ID}` retrieve full details for service  
+  example: https://babelfish.data-container.net/service/33
+
+
+To manage your own service entries (all users of an organisation can edit service entries created by users of this organisation) the following API endpoints are available:
+
+* `PUT /service/{SERVICE_ID}` update a service entry  
+  example:
+  ```bash
+  cat service.json | \
+  curl -H "Content-Type: application/json" \
+       -H "Authorization: Bearer $TOKEN" \
+       -d @- -X PUT https://babelfish.data-container.net/service/1
+  ```
+
+* `DELETE /service/{SERVICE_ID}` delete a service entry  
+  example:
+  ```bash
+  curl -H "Authorization: Bearer $TOKEN" \
+       -X DELETE https://babelfish.data-container.net/service/1
+  ```
+
+&nbsp;
 
 ## About  
 

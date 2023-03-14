@@ -19,7 +19,7 @@ class ServicesController < ApplicationController
         else
             items = params[:items] || 20
         end
-        @pagy, @records = pagy(Store.where(key: "service").select(:id, :item, :meta), page: page, items: items)
+        @records = Store.where(key: "service").select(:id, :item, :meta)
         retVal = []
         @records.each do |r|
             meta = r.meta
@@ -39,18 +39,12 @@ class ServicesController < ApplicationController
                 end
             end
         end
-
-        # retVal = [
-        #     {"service-id": 1, "name": "DID Lint"},
-        #     {"service-id": 2, "name": "xyz"}
-        # ]
         if params[:sort].to_s == "name"
-            render json: retVal.sort_by { |r| r.transform_keys(&:to_s)["name"].to_s },
-                   status: 200
-        else
-            render json: retVal,
-                   status: 200
+            retVal = retVal.sort_by { |r| r.transform_keys(&:to_s)["name"].to_s }
         end
+        @pagy, @records = pagy_array(retVal, page: page, items: items)
+        render json: @records,
+               status: 200
 
     end
 
@@ -69,7 +63,7 @@ class ServicesController < ApplicationController
                     meta = JSON.parse(meta) rescue nil
                 end
                 if meta["delete"].nil? || !meta["delete"]
-                    if data.deep_find(q.first.to_s).to_s == q.last
+                    if data.deep_find(q.first.to_s).to_s.downcase == q.last.downcase
                         service_name = data.transform_keys(&:to_s)["interface"]["info"]["title"].to_s rescue ""
                         retVal << {"service-id": s.id, "name": service_name}
                     end
@@ -115,37 +109,6 @@ class ServicesController < ApplicationController
         end
         render json: retVal.merge({"service-id" => @store.id}),
                status: 200
-
-        # retVal = {
-        #   "service-id": 1,
-        #   "interface": {
-        #     "info": { "title": "DID Lint" },
-        #     "servers": [{"url": "https://didlint.ownyourdata.eu"}],
-        #     "party": "data_consumer",
-        #     "paths": {
-        #       "/api/validate": {
-        #         "post": {
-        #           "requestBody": {
-        #             "content": {
-        #               "application/json": {
-        #                 "schema": {} 
-        #               }
-        #             }
-        #           }
-        #         }
-        #       }
-        #     }
-        #   },
-        #   "data": nil,
-        #   "governance": {
-        #     "dpv:hasProcessing": ["dpv:Use"],
-        #     "dpv:hasPurpose": "dpv:Purpose",
-        #     "dpv:hasExpiryTime": "6 months"
-        #   }
-        # }
-        # render json: retVal,
-        #        status: 200
-
     end
 
     def create
