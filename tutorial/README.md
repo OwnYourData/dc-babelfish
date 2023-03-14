@@ -3,10 +3,10 @@
 This page describes step-by-step instructions to demonstrate the various features of the [NGI ONTOCHAIN Gateway API](https://ontochain.ngi.eu/content/babelfish-service-integration-heterogeneous-environments) (project name: "Babelfish").
 
 1. [Gateway API Endpoints and Data Structures](https://hackmd.io/faNBTCUcSRyQsLOf_Jhdag)  
-    *Topics:* detailed interface descriptions for Service Discovery, Organisation and User Accounts, and Storage Services
+    *Topics: detailed interface descriptions for Service Discovery, Organisation and User Accounts, and Storage Services*
 
-2. [Registering a Service](2_Services/README.md)
-    *Topics:* text
+2. [Registering a Service](2_Services/README.md)  
+    *Topics: step-by-step instructions to register your organisation and user at the Gateway API and publish a service in the Service Catalogue*
 
 ## Improve the Tutorial
 

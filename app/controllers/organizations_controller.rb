@@ -2,7 +2,7 @@ class OrganizationsController < ApplicationController
     include ApplicationHelper
     include BabelfishHelper
 
-    before_action -> { doorkeeper_authorize! :admin }, only: :create
+    before_action -> { doorkeeper_authorize! :admin }, only: [:create, :index]
     before_action -> { doorkeeper_authorize! :write, :admin }, only: [:update, :delete]
     before_action -> { doorkeeper_authorize! :read, :write, :admin }, only: [:read, :list]
 
@@ -17,7 +17,7 @@ class OrganizationsController < ApplicationController
         dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
         @store = Store.find_by_dri(dri)
         if @store.nil?
-            @store = Store.new(item: data.to_json, meta: meta.to_json, dri: dri)
+            @store = Store.new(item: data.to_json, meta: meta.to_json, dri: dri, key: "org")
             @store.save
         end
         org_id = @store.id
@@ -48,6 +48,21 @@ class OrganizationsController < ApplicationController
         retVal = {"organization-id": org_id, "name": org_name, "admin-user-id": @store.id}
         render json: retVal,
                status: 200
+    end
+
+    def index
+        @orgs = Store.where(key: "org")
+        retVal = []
+        @orgs.each do |org|
+            data = org.item
+            if !(data.is_a?(Hash) || data.is_a?(Array))
+                data = JSON.parse(data) rescue {}
+            end
+            retVal << {"organization-id": org.id, "name": data["name"].to_s}
+        end unless @orgs.nil?
+        render json: retVal,
+               status: 200
+
     end
 
     def read
@@ -90,6 +105,37 @@ class OrganizationsController < ApplicationController
         render json: retVal.merge({"organization-id" => @store.id}),
                status: 200
 
+    end
+
+    def current
+        @store = Store.find(doorkeeper_org) rescue nil?
+        if @store.nil?
+            render json: {"error": "user without organisation"},
+                   status: 400
+            return
+        end
+
+        data = @store.item
+        meta = @store.meta
+        if !(data.is_a?(Hash) || data.is_a?(Array))
+            data = JSON.parse(data) rescue nil
+        end
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        if meta["type"] != "organization"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+
+        render json: {"organization-id": @store.id, "name": data["name"].to_s},
+               status: 200
     end
 
     def update
@@ -146,8 +192,8 @@ class OrganizationsController < ApplicationController
                        status: 400
             end
         else
-            render json: {"error": "cannot save update"},
-                   status: 404
+            render json: {"info": "nothing updated"},
+                   status: 204
         end
 
     end
@@ -223,6 +269,11 @@ class OrganizationsController < ApplicationController
                    status: 404
             return
         end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
 
         @orgs = Store.where(key: "user_" + id.to_s)
         retVal = []
@@ -231,7 +282,11 @@ class OrganizationsController < ApplicationController
             if !(data.is_a?(Hash) || data.is_a?(Array))
                 data = JSON.parse(data) rescue {}
             end
-            if meta["delete"].to_s.downcase != "true"
+            meta = org.meta
+            if !(meta.is_a?(Hash) || meta.is_a?(Array))
+                meta = JSON.parse(meta) rescue nil
+            end
+            if meta["delete"].nil? || meta["delete"].to_s.downcase != "true"
                 retVal << {"user-id": org.id, "name": data["name"].to_s}
             end
         end unless @orgs.nil?

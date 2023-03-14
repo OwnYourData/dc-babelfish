@@ -6,7 +6,8 @@ class ServicesController < ApplicationController
     Hash.include CoreExtensions
 
     # [:page, :search, :read] have public access
-    before_action -> { doorkeeper_authorize! :write, :admin }, only: [:create, :update, :delete]
+    before_action -> { doorkeeper_authorize! :write }, only: [:create]
+    before_action -> { doorkeeper_authorize! :write, :admin }, only: [:update, :delete]
     after_action { pagy_headers_merge(@pagy) if @pagy }
 
     def page
@@ -18,11 +19,25 @@ class ServicesController < ApplicationController
         else
             items = params[:items] || 20
         end
-        @pagy, @records = pagy(Store.where(key: "service").select(:id, :item), page: page, items: items)
+        @pagy, @records = pagy(Store.where(key: "service").select(:id, :item, :meta), page: page, items: items)
         retVal = []
         @records.each do |r|
-            service_name = r.transform_keys(&:to_s)["interface"]["info"]["title"].to_s rescue ""
-            retVal << {"service-id": r.id, "name": service_name}
+            meta = r.meta
+            if !(meta.is_a?(Hash) || meta.is_a?(Array))
+                meta = JSON.parse(meta) rescue nil
+            end
+            if meta["delete"].nil? || !meta["delete"]
+                data = r.item
+                if !(data.is_a?(Hash) || data.is_a?(Array))
+                    data = JSON.parse(data) rescue nil
+                end                
+                service_name = data.transform_keys(&:to_s)["interface"]["info"]["title"].to_s rescue ""
+                if service_name.to_s == ""
+                    retVal << {"service-id": r.id}
+                else
+                    retVal << {"service-id": r.id, "name": service_name}
+                end
+            end
         end
 
         # retVal = [
@@ -30,7 +45,7 @@ class ServicesController < ApplicationController
         #     {"service-id": 2, "name": "xyz"}
         # ]
         if params[:sort].to_s == "name"
-            render json: retVal.sort_by { |r| r["name"] },
+            render json: retVal.sort_by { |r| r.transform_keys(&:to_s)["name"].to_s },
                    status: 200
         else
             render json: retVal,
@@ -49,9 +64,15 @@ class ServicesController < ApplicationController
                 if !(data.is_a?(Hash) || data.is_a?(Array))
                     data = JSON.parse(data) rescue nil
                 end
-                if data.deep_find(q.first.to_s).to_s == q.last
-                    service_name = data.transform_keys(&:to_s)["interface"]["info"]["title"].to_s rescue ""
-                    retVal << {"service-id": s.id, "name": service_name}
+                meta = s.meta
+                if !(meta.is_a?(Hash) || meta.is_a?(Array))
+                    meta = JSON.parse(meta) rescue nil
+                end
+                if meta["delete"].nil? || !meta["delete"]
+                    if data.deep_find(q.first.to_s).to_s == q.last
+                        service_name = data.transform_keys(&:to_s)["interface"]["info"]["title"].to_s rescue ""
+                        retVal << {"service-id": s.id, "name": service_name}
+                    end
                 end
             end     
         end
@@ -215,8 +236,8 @@ class ServicesController < ApplicationController
                        status: 400
             end
         else
-            render json: {"error": "cannot save update"},
-                   status: 404
+            render json: {"info": "nothing updated"},
+                   status: 204
         end
     end
 

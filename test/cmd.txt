@@ -1,4 +1,5 @@
 docker run -d --name babelfish -p 3100:3000 oydeu/dc-babelfish
+docker run -d --name babelfish -p 3100:3000 oydeu/dc-babelfish:arm64v8
 
 curl http://localhost:3100/list/count/page
 curl https://babelfish.data-container.net/list/count/page
@@ -137,9 +138,9 @@ curl http://localhost:3100/object/2/meta
 
 
 # Storage Provider(babelfish) ================
-cat col.json | curl -H "Content-Type: application/json" -d @- -X POST https://babelfish.data-container.net/collection/
-curl https://babelfish.data-container.net/collection/4
-curl https://babelfish.data-container.net/collection/4/meta
+cat col.json | curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d @- -X POST https://babelfish.data-container.net/collection/
+curl -H "Authorization: Bearer $TOKEN" https://babelfish.data-container.net/collection/59
+curl -H "Authorization: Bearer $TOKEN" https://babelfish.data-container.net/collection/59/meta
 
 cat obj.json | curl -H "Content-Type: application/json" -d @- -X POST https://babelfish.data-container.net/object/
 curl https://babelfish.data-container.net/object/5

@@ -135,8 +135,8 @@ class ObjectsController < ApplicationController
         end
         dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
         if !Store.find_by_dri(dri).nil?
-            render json: {"error": "object already exists"},
-                   status: 400
+            render json: {"info": "object already exists"},
+                   status: 204
             return
         end
 

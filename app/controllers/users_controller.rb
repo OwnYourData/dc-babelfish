@@ -2,7 +2,8 @@ class UsersController < ApplicationController
     include ApplicationHelper
     include BabelfishHelper
 
-    before_action -> { doorkeeper_authorize! :write, :admin }, only: [:create, :update, :delete]
+    before_action -> { doorkeeper_authorize! :write }, only: [:create]
+    before_action -> { doorkeeper_authorize! :write, :admin }, only: [:update, :delete]
     before_action -> { doorkeeper_authorize! :read, :write, :admin }, only: [:read, :wallet]
 
     def create
@@ -70,7 +71,7 @@ class UsersController < ApplicationController
     def update
         # input
         id = params[:id]
-        data = params.permit!.except(:controller, :action, :collection, :id).transform_keys(&:to_s)
+        data = params.permit!.except(:controller, :action, :user, :id).transform_keys(&:to_s)
         if !data["_json"].nil?
             data = data["_json"]
         end
@@ -125,7 +126,11 @@ class UsersController < ApplicationController
             @store.dri = dri
             if @store.save
                 @dk = Doorkeeper::Application.where(name: orig_data["name"].to_s, organization_id: org_id).first rescue nil
-                if !@dk.nil?
+                if @dk.nil?
+                    render json: {"error": "cannot save update"},
+                           status: 400
+                    return
+                else
                     @dk.name = data["name"].to_s 
                     @dk.organization_id = org_id
                     if meta_oauth
@@ -142,8 +147,8 @@ class UsersController < ApplicationController
                        status: 400
             end
         else
-            render json: {"error": "cannot save update"},
-                   status: 404
+            render json: {"info": "nothing updated"},
+                   status: 204
         end  
 
     end

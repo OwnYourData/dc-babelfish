@@ -2,7 +2,8 @@ class CollectionsController < ApplicationController
     include ApplicationHelper
     include BabelfishHelper
 
-    before_action -> { doorkeeper_authorize! :write, :admin }, only: [:create, :update, :delete]
+    before_action -> { doorkeeper_authorize! :write }, only: [:create]
+    before_action -> { doorkeeper_authorize! :write, :admin }, only: [:update, :delete]
     before_action -> { doorkeeper_authorize! :read, :write, :admin }, only: [:read, :list, :objects]
 
     def create
@@ -80,8 +81,8 @@ class CollectionsController < ApplicationController
                        status: 400
             end
         else
-            render json: {"error": "cannot save update"},
-                   status: 404
+            render json: {"info": "nothing updated"},
+                   status: 204
         end
     end
 
@@ -192,11 +193,17 @@ class CollectionsController < ApplicationController
             if !(data.is_a?(Hash) || data.is_a?(Array))
                 data = JSON.parse(data) rescue nil
             end
-            col_name = data["name"] rescue nil
-            if col_name.to_s == ""
-                retVal << {"collection-id": r.id}
-            else
-                retVal << {"collection-id": r.id, "name": col_name}
+            meta = r.meta
+            if !(meta.is_a?(Hash) || meta.is_a?(Array))
+                meta = JSON.parse(meta) rescue nil
+            end
+            if meta["delete"].nil? || !meta["delete"]
+                col_name = data["name"] rescue nil
+                if col_name.to_s == ""
+                    retVal << {"collection-id": r.id}
+                else
+                    retVal << {"collection-id": r.id, "name": col_name}
+                end
             end
         end
         render json: retVal,
