@@ -6,7 +6,7 @@ API gateways are an essential component of modern software architecture that pro
 
 [0 - Prerequisites](#0---prerequisites)  
 [1 - Structure of a Service Description](#1---structure-of-a-service-description)  
-[2 - Creating a Service Description](#2---creating-a-service-description)
+[2 - Creating a Service Description](#2---creating-a-service-description)  
 [3 - Testing and Maintenance](#3---testing-and-maintenance)
 
 
