@@ -70,6 +70,8 @@ curl -H "Authorization: Bearer $TOKEN" https://babelfish.data-container.net/orga
 > {"organization-id":31,"name":"OwnYourData"}
 > ```
 
+[back to top](#)
+
 
 ## 1 - Structure of a Service Description
 
@@ -131,6 +133,8 @@ The Service Catalogue of the Gateway API comprises of all registered services. A
 }
 ```
 
+[back to top](#)
+
 
 ## 2 - Creating a Service in the Service Catalogue
 
@@ -147,6 +151,8 @@ curl -H "Content-Type: application/json" \
 > ```json=
 > {"service-id": 62, "name": "General Linter"}
 > ```
+
+[back to top](#)
 
 
 ## 3 - Discovery and Maintenance
@@ -181,6 +187,8 @@ To manage your own service entries (all users of an organisation can edit servic
   curl -H "Authorization: Bearer $TOKEN" \
        -X DELETE https://babelfish.data-container.net/service/1
   ```
+
+[back to top](#)
 
 &nbsp;
 
