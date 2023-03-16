@@ -50,7 +50,7 @@ User record:
 }
 ```
 
-With the registration process you receive the OAuth2 client credentials (`client-id` and `client-secret`) for the admin user of your organization. You can use the following code on the command line to generate an OAuth2 Bearer Token:
+With the registration process you receive the OAuth2 client credentials (`client-id` and `client-secret`) for the admin user of your organization. Copy this credential information when accessing any information on the Gateway API or you can use the following code on the command line to generate an OAuth2 Bearer Token:
 
 ```bash=
 export KEY="-insert client-id from your user-"
@@ -78,7 +78,7 @@ curl -H "Authorization: Bearer $TOKEN" https://babelfish.data-container.net/orga
 The Service Catalogue of the Gateway API comprises of all registered services. A service is a JSON object with the following attributes:  
 * `interface`: describes the interface of the service (specifically API endpoints) and general aspects of the entity using the [Open API Specification v3](https://spec.openapis.org/oas/v3.1.0) (also known as Swagger documentation)  
 * `data`: describes the expected data structure using [SOyA (Semantic Overlay Architecture)](https://ownyourdata.github.io/soya/) structures; if the data structure does not exist, this entry shall provide `null`; it is important to note that the content of this field is optional and services in ONTOCHAIN are not required to use SOYA- However, if those services decide to use SOyA, they benefit from the additional functionality in the integration helper  
-* `governance`: describes the Usage Policy based on the structure from the [Data Privacy Vocabulary](https://w3c.github.io/dpv/dpv/) or similar - this information is used as input for Data Agreements
+* `governance`: describes the Usage Policy based on the structure from the [Data Privacy Vocabulary](https://w3c.github.io/dpv/dpv/) or similar - this information is used as input for Data Agreements; more information on relevant attributes and values will be added later
 
 ### Example of a complete Service Description
 
