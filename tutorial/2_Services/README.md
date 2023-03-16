@@ -17,7 +17,7 @@ API gateways are an essential component of modern software architecture that pro
 
 To access the ONTOCHAIN Gateway API you need first your organization registered. Request such a registration through one of the following channels or reach out to your ONTOCHAIN contact for further information:
 
-* Klevis Shkembi (University of Lubljana)  
+* Klevis Shkembi ([University of Ljubljana](https://fri.uni-lj.si/en/about-faculty/employees/klevis-shkembi))  
   via ONTOCHAIN Slack
 
 * Christoph Fabianek (OwnYourData)  
