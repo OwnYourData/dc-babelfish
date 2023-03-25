@@ -8,6 +8,9 @@ This page describes step-by-step instructions to demonstrate the various feature
 2. [Registering a Service](2_Services/README.md)  
     *Topics: step-by-step instructions to register your organisation and user at the Gateway API and publish a service in the Service Catalogue*
 
+3. [Metadata Management](3_Metadata/README.md)  
+    *Topics: explanation how to create and maintain object metadata for effective data governance and analysis*
+
 &nbsp;
 
 ## Improve the Tutorial
