@@ -58,7 +58,13 @@ class OrganizationsController < ApplicationController
             if !(data.is_a?(Hash) || data.is_a?(Array))
                 data = JSON.parse(data) rescue {}
             end
-            retVal << {"organization-id": org.id, "name": data["name"].to_s}
+            meta = org.meta
+            if !(meta.is_a?(Hash) || meta.is_a?(Array))
+                meta = JSON.parse(meta) rescue {}
+            end
+            if meta["delete"].to_s.downcase != "true"
+                retVal << {"organization-id": org.id, "name": data["name"].to_s}
+            end
         end unless @orgs.nil?
         render json: retVal,
                status: 200
@@ -99,6 +105,8 @@ class OrganizationsController < ApplicationController
         end
         if show_meta.to_s == "TRUE"
             retVal = meta.merge({"dri" => @store.dri})
+            retVal = retVal.merge({"created-at" => @store.created_at})
+            retVal = retVal.merge({"updated-at" => @store.updated_at})
         else
             retVal = data
         end
@@ -141,7 +149,7 @@ class OrganizationsController < ApplicationController
     def update
         # input
         id = params[:id]
-        data = params.permit!.except(:controller, :action, :collection, :id).transform_keys(&:to_s)
+        data = params.permit!.except(:controller, :action, :organization, :id).transform_keys(&:to_s)
         if !data["_json"].nil?
             data = data["_json"]
         end

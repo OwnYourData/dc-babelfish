@@ -63,9 +63,15 @@ class ServicesController < ApplicationController
                     meta = JSON.parse(meta) rescue nil
                 end
                 if meta["delete"].nil? || !meta["delete"]
-                    if data.deep_find(q.first.to_s).to_s.downcase == q.last.downcase
+                    if data.deep_find(q.first.to_s).to_s.downcase.include?(q.last.downcase)
                         service_name = data.transform_keys(&:to_s)["interface"]["info"]["title"].to_s rescue ""
                         retVal << {"service-id": s.id, "name": service_name}
+                    end
+                    if q.first.to_s == "name"
+                        if data.deep_find("title").to_s.downcase.include?(q.last.downcase)
+                            service_name = data.transform_keys(&:to_s)["interface"]["info"]["title"].to_s rescue ""
+                            retVal << {"service-id": s.id, "name": service_name}
+                        end
                     end
                 end
             end     
@@ -104,6 +110,8 @@ class ServicesController < ApplicationController
         end
         if show_meta.to_s == "TRUE"
             retVal = meta.merge({"dri" => @store.dri})
+            retVal = retVal.merge({"created-at" => @store.created_at})
+            retVal = retVal.merge({"updated-at" => @store.updated_at})
         else
             retVal = data
         end

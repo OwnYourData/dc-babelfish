@@ -189,6 +189,8 @@ class UsersController < ApplicationController
 
         if show_meta.to_s == "TRUE"
             retVal = meta.merge({"dri" => @store.dri})
+            retVal = retVal.merge({"created-at" => @store.created_at})
+            retVal = retVal.merge({"updated-at" => @store.updated_at})
         else
             retVal = data
         end

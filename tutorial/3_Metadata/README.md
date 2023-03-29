@@ -1,6 +1,6 @@
-# Registering a Service
+# Metadata Management
 
-*last update: 25 March 2023*  
+*last update: 29 March 2023*  
 
 Metadata management is a critical aspect of data governance and analysis, which involves the organization, standardization, and maintenance of metadata. Metadata refers to the data that describes other data, such as data elements, data structures, data types, and data relationships. In today's data-driven world, metadata management is essential to ensure the accuracy, consistency, and completeness of data, as well as to facilitate data integration, data discovery, and data reuse. In this tutorial, we will provide an overview of metadata management using the NGI ONTOCHAIN Gateway API. Refer to the [Tutorial-Overview](https://github.com/OwnYourData/dc-babelfish/tree/main/tutorial) for other aspects of the Gateway API.
 
@@ -16,43 +16,81 @@ Metadata management is a critical aspect of data governance and analysis, which 
 
 ## 0 - Prerequisites
 
-* existing account on Gateway API and able to create valid token - [check Service Tutorial for details](https://github.com/OwnYourData/dc-babelfish/tree/main/tutorial/2_Service#0---prerequisites)
-* access to a collection setup for one of the available storage Providers
-* reference to available object
-* example object used throughtout the remainder of the tutorial https://babelfish.data-container.net/object/100
+To walk through this tutorial make sure to have an existing account on the Gateway API and that you are able to create a token for authorization - [check Service Tutorial for details](https://github.com/OwnYourData/dc-babelfish/tree/main/tutorial/2_Service#0---prerequisites)
+
+Throughout this tutorial we will use the following preconfigured entities if not specified otherwise:
+* Organisation: *Demo Organisation* with ID 77
+* User: *Demo User* with ID 89
+  OAuth2 credentials for this user are:
+  * `client-id`: "-6H7FHYo4aX5-dYMVF82x2_rzO1cXIB5URc24dPwMls"
+  * `client-secret`: "cnhNgI77IMVeyenhZnPylcD_XKO72piWzzT68psVKJA"
+  * <details><summary>code sample to retrieve <code>TOKEN</code> on the command line</summary>  
+
+    ```bash=
+    export KEY="-6H7FHYo4aX5-dYMVF82x2_rzO1cXIB5URc24dPwMls"
+    export SECRET="cnhNgI77IMVeyenhZnPylcD_XKO72piWzzT68psVKJA"
+    export TOKEN=`curl -s -d grant_type=client_credentials -d client_id=$KEY -d client_secret=$SECRET -d scope=write -X POST https://babelfish.data-container.net/oauth/token | jq -r '.access_token'`
+    ```
+    </details>
+* Collection: *Demo Collection* with ID 99
+* Object: *Demo Object* with ID 100
 
 [back to top](#)
 
 
 ## 1 - Default Metadata Attributes
 
-the following meta attributes exist for each object
-* `id` - unique ID provided by the respective storage provider -> stays constant accross updates
-* `dri` - content-based address (hash-value) of the object -> changes with every update
+The following meta attributes exist for each object:  
+* `id` - unique ID provided by the respective storage provider (is constant accross updates)
+* `dri` - content-based address (hash-value) of the object (changes with every update)
 * `created_at` - timestamp when object was initially created
 * `updated_at` - timestamp of last update
 
-these attributes cannot be set / changed by the user and are maintained by the system
+*note: these attributes cannot be set / changed by the user and are maintained by the system*
 
 [back to top](#)
 
 
 ## 2 - Writing & Retrieving Metadata Information
 
-* retrieve the meta data information with `GET /object/{ID}/meta`
-
-> Response JSON
-
-* write metadata by using reserved attribute `meta` in JSON
-  Example:   
-  ```json
-  {
-    "key": "value",
-    "meta": {
-        "my": "metadata"
-    }
+To **create an object** and provide metadata the following structure should be used (i.e., use `meta`):
+```json
+{
+  "key": "value",
+  "meta": {
+      "my": "metadata"
   }
-  ```
+}
+```
+
+<details><summary>Example for creating an object with metadata</summary>
+
+```bash=
+echo '{"key":"value","collection-id":99,"meta":{"my":"metadata"}}' | \
+   curl -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" -d @- \
+        -X POST https://babelfish.data-container.net/object
+```
+
+</details>
+
+
+**Retrieve meta data** information with `GET /object/{ID}/meta`.  
+
+Example:  
+`curl -H "Authorization: Bearer $TOKEN" https://babelfish.data-container.net/object/100/meta`  
+Response:
+```json
+{
+  "type": "object",
+  "organization-id": "77",
+  "dri": "zQmcnSfLY1AJqMZWtEEWBCo1i56xkPHz4f2HntsbmBXZCHW",
+  "created-at": "2023-03-28T23:09:22.405Z",
+  "updated-at": "2023-03-28T23:09:22.405Z",
+  "object-id": 100
+}
+```
+
+Further notes:  
 
 * use `data` and `meta` separately to write anything into the actual object (even *meta*)  
   Example:   
