@@ -180,7 +180,7 @@ class UsersController < ApplicationController
                    status: 404
             return
         end
-        org_id = data["organization-id"]
+        org_id = meta["organization-id"]
         if doorkeeper_org != org_id.to_s && doorkeeper_scope != "admin"
             render json: {"error": "Not authorized"},
                    status: 401

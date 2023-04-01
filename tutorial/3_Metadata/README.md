@@ -1,6 +1,6 @@
 # Metadata Management
 
-*last update: 29 March 2023*  
+*last update: 30 March 2023*  
 
 Metadata management is a critical aspect of data governance and analysis, which involves the organization, standardization, and maintenance of metadata. Metadata refers to the data that describes other data, such as data elements, data structures, data types, and data relationships. In today's data-driven world, metadata management is essential to ensure the accuracy, consistency, and completeness of data, as well as to facilitate data integration, data discovery, and data reuse. In this tutorial, we will provide an overview of metadata management using the NGI ONTOCHAIN Gateway API. Refer to the [Tutorial-Overview](https://github.com/OwnYourData/dc-babelfish/tree/main/tutorial) for other aspects of the Gateway API.
 
@@ -113,12 +113,53 @@ Further notes:
 ## 3 - Reserved Names for Metadata
 
 the following meta attributes have a special meaning / are recognized in a specific way by the Gateway API:  
-* `schema`
-* `provenance` - if provided must be a JSON-LD document according to the W3C Prov-O specification  
+* `schema` - specifies the SOyA structure of the stored object (schema information provides a blueprint for organizing and structuring data to ensure consistency and clarity)  
+  The use of a `schema` is optional and benefits are automatic validation and form rendering capabilities.
+
+  <details><summary>Schema Example</summary>
+
+  **Example recordset**  
+
+  file `recordset.json`:  
+  ```json=
+  {
+    "name": "Demo Object",
+    "date": "2023-04-01",
+    "check": true,
+    "choose": "Option 1",
+    "meta": {
+      "collection-id":99,
+      "schema": "Demo"
+    }
+  }
+  ```
+
+  **Store schema for an object**  
+
+  ```bash=
+  cat recordset.json | \
+    curl -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" -d @- \
+         -X POST https://babelfish.data-container.net/object
+  ```
+
+  **Read schema information for an object**  
+
+  ```bash=
+  curl -H "Authorization: Bearer $TOKEN" https://babelfish.data-container.net/object/100/meta
+  ```
+
+  **Render an HTML form based on the schema for an object**  
+
+  show the content of an object rendered as an editable HTML form - [click here](https://soya-form.ownyourdata.eu/?schemaDri=Demo&data=%7B%22name%22%3A%22Demo+Object%22%2C%22date%22%3A%222023-04-01%22%2C%22check%22%3Atrue%2C%22choose%22%3A%22Option+1%22%2C%22collection-id%22%3A99%2C%22object-id%22%3A100%7D)
+
+  &nbsp;
+
+  </details>
+* `provenance` - specifies provenance information about the object and if provided it must be a JSON-LD document according to the [W3C Prov-O specification](https://www.w3.org/TR/prov-o/) (provenance information allows for the tracking of the origin, usage rights, and processing history of the data to ensure transparency, accountability, and reproducibility)  
 
   <details><summary>Provenance Example</summary>
         
-  Example: 
+  **Example recordset**
   ```json-ld=
   {
     "@context": {
@@ -132,13 +173,13 @@ the following meta attributes have a special meaning / are recognized in a speci
     },
     "@graph": [
       {
-        "@id": "semcon_res:container_41f80b87-9b8d", <- how to use DID of Storage Service?
+        "@id": "semcon_res:container_41f80b87-9b8d",
         "@type": "prov:softwareAgent",
-        "semcon:containerInstanceId": "41f80b87-9b8d-43d6-ba5e-aed6b837dbd6", <- just identifier of DID
+        "semcon:containerInstanceId": "41f80b87-9b8d-43d6-ba5e-aed6b837dbd6",
         "rsd:comment": "Service Description of Storage Service",
         "rsd:label": "Titel of Storage Service",
         "prov:actedOnBehalfOf": {
-          "@id": "semcon_res:operator_a130a813440e" <- reference operator below
+          "@id": "semcon_res:operator_a130a813440e"
         }
       },
       {
@@ -172,12 +213,12 @@ the following meta attributes have a special meaning / are recognized in a speci
         }
       },
       {
-        "@id": "semcon_res:operator_a130a813440e", <- how to use DID of Operator?
+        "@id": "semcon_res:operator_a130a813440e",
         "@type": [
           "foaf:Person",
           "prov:Person"
         ],
-        "semcon:operatorHash": "a130a813440e6fc01bd174e333ac2ade366372cbd09f6d460ac96c5d1eccf641", <- just identifier of DID
+        "semcon:operatorHash": "a130a813440e6fc01bd174e333ac2ade366372cbd09f6d460ac96c5d1eccf641",
         "foaf:mbox": {"@id": "mailto:christoph@ownyourdata.eu"}, <- necessary? available through DID
         "foaf:name": "Christoph Fabianek"
       }

@@ -21,9 +21,15 @@ class ObjectsController < ApplicationController
         dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
         col_id = data["collection-id"] rescue ""
         if col_id.to_s == ""
-            render json: {"error": "missing 'collection-id'"},
-                   status: 400
-            return
+            col_id = meta["collection-id"] rescue ""
+            if col_id.to_s == ""
+                render json: {"error": "missing 'collection-id'"},
+                       status: 400
+                return
+            else
+                meta["collection-id"] = col_id.to_s
+                data = data.except("collection-id")
+            end
         end
         @col = Store.find(col_id) rescue nil
         if @col.nil?
@@ -40,7 +46,7 @@ class ObjectsController < ApplicationController
                    status: 400
             return
         end
-        if col_meta["organization-id"] != doorkeeper_org
+        if col_meta["organization-id"].to_s != doorkeeper_org.to_s
             render json: {"error": "Not authorized"},
                    status: 401
             return
@@ -58,7 +64,7 @@ class ObjectsController < ApplicationController
 
     def update
         # input
-        id = params[:id]
+        id = params.permit![:id]
         data = params.permit!.except(:controller, :action, :object, :id).transform_keys(&:to_s)
         if !data["_json"].nil?
             data = data["_json"]
@@ -86,14 +92,15 @@ class ObjectsController < ApplicationController
                    status: 404
             return
         end
-        if meta["organization-id"] != doorkeeper_org
+        if meta["organization-id"].to_s != doorkeeper_org.to_s
             render json: {"error": "Not authorized"},
                    status: 401
             return
         end
         if !data["meta"].nil?
             meta = {
-                "type": "object"
+                "type": "object",
+                "organization-id": doorkeeper_org
             }
             meta = meta.merge(data["meta"])
             data = data.except("meta")
@@ -109,9 +116,15 @@ class ObjectsController < ApplicationController
         end
         col_id = data["collection-id"] rescue ""
         if col_id.to_s == ""
-            render json: {"error": "missing 'collection-id'"},
-                   status: 400
-            return
+            col_id = meta["collection-id"] rescue ""
+            if col_id.to_s == ""
+                render json: {"error": "missing 'collection-id'"},
+                       status: 400
+                return
+            else
+                meta["collection-id"] = col_id.to_s
+                data = data.except("collection-id")
+            end
         end
         @col = Store.find(col_id) rescue nil
         if @col.nil?
@@ -128,15 +141,15 @@ class ObjectsController < ApplicationController
                    status: 400
             return
         end
-        if col_meta["organization-id"] != doorkeeper_org
+        if col_meta["organization-id"].to_s != doorkeeper_org.to_s
             render json: {"error": "Not authorized"},
                    status: 401
             return
         end
         dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
         if !Store.find_by_dri(dri).nil?
-            render json: {"info": "object already exists"},
-                   status: 204
+            render json: {"object-id": @store.id, "collection-id": col_id, "info": "object already exists"},
+                   status: 200
             return
         end
 
@@ -156,8 +169,8 @@ class ObjectsController < ApplicationController
 
     def write
         # input
-        id = params[:id]
-        payload = params.except(:controller, :action, :object, :id)
+        id = params.permit![:id]
+        payload = params.permit!.except(:controller, :action, :object, :id)
         if !payload["_json"].nil?
             payload = payload["_json"]
         end
@@ -188,7 +201,7 @@ class ObjectsController < ApplicationController
                    status: 404
             return
         end
-        if meta["organization-id"] != doorkeeper_org
+        if meta["organization-id"].to_s != doorkeeper_org.to_s
             render json: {"error": "Not authorized"},
                    status: 401
             return
@@ -196,7 +209,11 @@ class ObjectsController < ApplicationController
         col_id = data["collection-id"]
 
         # store payload
-        pl_meta = {"type": "payload"}
+        pl_meta = {
+            "type": "payload",
+            "collection-id": col_id,
+            "organization-id": doorkeeper_org
+        }
         if data["payload"].to_s == ""
             @pl = Store.new(item: payload.to_json, meta: pl_meta.to_json, dri: payload_dri)
         else
@@ -263,7 +280,7 @@ class ObjectsController < ApplicationController
                    status: 404
             return
         end
-        if meta["organization-id"] != doorkeeper_org
+        if meta["organization-id"].to_s != doorkeeper_org.to_s
             render json: {"error": "Not authorized"},
                    status: 401
             return
@@ -280,8 +297,8 @@ class ObjectsController < ApplicationController
     end
 
     def access
-        object_id = params[:object_id]
-        user_id = params[:user_id]
+        object_id = params.permit![:object_id]
+        user_id = params.permit![:user_id]
         @obj = Store.find(object_id)
         @user = Store.find(user_id)
         if @obj.nil?
@@ -337,7 +354,7 @@ class ObjectsController < ApplicationController
           "access": true
         }
         status_code = 200
-        if user_meta["organization-id"] != doorkeeper_org
+        if user_meta["organization-id"].to_s != doorkeeper_org.to_s
             retVal = {
               "object-id": object_id,
               "collection-id": user_id,
@@ -345,7 +362,7 @@ class ObjectsController < ApplicationController
             }
             status_code = 401
         end
-        if obj_meta["organization-id"] != doorkeeper_org
+        if obj_meta["organization-id"].to_s != doorkeeper_org.to_s
             retVal = {
               "object-id": object_id,
               "collection-id": user_id,
@@ -384,7 +401,7 @@ class ObjectsController < ApplicationController
                    status: 404
             return
         end
-        if meta["organization-id"] != doorkeeper_org
+        if meta["organization-id"].to_s != doorkeeper_org.to_s
             render json: {"error": "Not authorized"},
                    status: 401
             return
@@ -439,7 +456,7 @@ class ObjectsController < ApplicationController
                    status: 404
             return
         end
-        if meta["organization-id"].to_s != doorkeeper_org && doorkeeper_scope != "admin"
+        if meta["organization-id"].to_s != doorkeeper_org.to_s && doorkeeper_scope.to_s != "admin"
             render json: {"error": "Not authorized"},
                    status: 401
             return
