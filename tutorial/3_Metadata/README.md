@@ -258,7 +258,7 @@ Response:
 
 **Creating a DID**  
 
-To create now a DID referencing this recordset the following command could be used:  
+To create now a DID referencing this recordset the following command could be used ([check information here](https://github.com/OwnYourData/oydid/tree/main/cli) on using `oydid`:  
 ```bash
 echo '{"service":[
     {"serviceEndpoint":"https://babelfish.data-container.net/api/data?dri=zQmbrALJSeUxEb61oc6QiwhmaadwPH4KhLpXFVUChkBciaf"}
