@@ -233,9 +233,89 @@ the following meta attributes have a special meaning / are recognized in a speci
 
 ## 4 - Decentralised Identifiers, Verifiable Credentials and Verifiable Presentations for Objects
 
-* this information is not stored as metadata but uses metadata to reference it
-* example to create DID for object using did:oyd Method and Uniregistrar
-* example to create VC for object using `oydid` command line tool
+Identities and Claims form a third layer in data management after the data itself (first layer: the payload) and the metadata (second layer: data about the payload). Information in this 3rd layer is usually not stored in the recordset but references it. Typically, such references either use a database identifier or for a decentralised approach a content-based address is used. In the Gateway API this is realised through DRIs (Decentralised Resource Identifiers).
+
+The first step in creating an identity or a claim for a recordset is therefore to retrieve the DRI.
+
+**Example for retrieving the DRI**  
+```bash
+curl -H "Authorization: Bearer $TOKEN" https://babelfish.data-container.net/object/100/meta
+```  
+
+Response:  
+> ```json
+> {
+>   "type": "object",
+>   "object-id": 100,
+>   "organization-id": 77,
+>   "collection-id": 99,
+>   "schema": "Demo",
+>   "dri": "zQmbrALJSeUxEb61oc6QiwhmaadwPH4KhLpXFVUChkBciaf",
+>   "created-at": "2023-03-28T23:09:22.405Z",
+>   "updated-at": "2023-04-01T23:39:16.871Z"
+> }
+> ```
+
+**Creating a DID**  
+
+To create now a DID referencing this recordset the following command could be used:  
+```bash
+echo '{"service":[
+    {"serviceEndpoint":"https://babelfish.data-container.net/api/data?dri=zQmbrALJSeUxEb61oc6QiwhmaadwPH4KhLpXFVUChkBciaf"}
+  ]}' | \
+oydid create --doc-pwd your_doc_secret --rev-pwd your_rev_secret -s -l https://babelfish.data-container.net
+```  
+
+Response:
+> [`did:oyd:zQmQ2LLfRep7QT3vBYvwsPaFgGhfDxtw89HzLiLiUkvv3XE%40babelfish.data-container.net`](https://resolver.identity.foundation/#did:oyd:zQmQ2LLfRep7QT3vBYvwsPaFgGhfDxtw89HzLiLiUkvv3XE%40babelfish.data-container.net)
+
+
+**Creating a Verifiable Credential**
+
+In a simple scenario one could now create a Verifiable Credential with a self-attestation using this DID:  
+```bash
+echo '{"my": "statement"}' | \
+oydid vc --issuer did:oyd:zQmQ2LLfRep7QT3vBYvwsPaFgGhfDxtw89HzLiLiUkvv3XE%40babelfish.data-container.net \
+    --doc-pwd your_doc_secret \
+    --holder did:oyd:zQmQ2LLfRep7QT3vBYvwsPaFgGhfDxtw89HzLiLiUkvv3XE%40babelfish.data-container.net
+```
+
+Response:
+> ```json
+> {
+>   "@context": [
+>     "https://www.w3.org/ns/credentials/v2"
+>   ],
+>   "type": [
+>     "VerifiableCredential"
+>   ],
+>   "issuer": "did:oyd:zQmQ2LLfRep7QT3vBYvwsPaFgGhfDxtw89HzLiLiUkvv3XE%40babelfish.data-container.net",
+>   "issuanceDate": "2023-04-02T23:19:21Z",
+>   "credentialSubject": {
+>     "id": "did:oyd:zQmQ2LLfRep7QT3vBYvwsPaFgGhfDxtw89HzLiLiUkvv3XE%40babelfish.data-container.net",
+>     "my": "statement"
+>   },
+>   "proof": {
+>     "type": "Ed25519Signature2020",
+>     "verificationMethod": "did:oyd:zQmQ2LLfRep7QT3vBYvwsPaFgGhfDxtw89HzLiLiUkvv3XE%40babelfish.data-container.net",
+>     "proofPurpose": "assertionMethod",
+>     "proofValue": "z5NeFMRzqnqpukAB4dvMT7uhLBLYLH4QNZ7YiAHn2x4LUkehxWaYEMvbNoFRQhVEgKUPBv6tCkfLR4NG1qtVCj4AE"
+>   },
+>   "identifier": "zQmW1DPvQDic17mCtGkpWgndrrQ8T95uwJhsWiAtz13TduV"
+> }
+> ```
+
+**Creating a Verifiable Presentation**
+
+Following the example above the Verifiable Credential can be signed by the holder and can be presented as a Verifiable Presentation:  
+```bash
+cat credential.json | \
+oydid vp-push --doc-pwd your_doc_secret -l https://babelfish.data-container.net \
+    --holder did:oyd:zQmQ2LLfRep7QT3vBYvwsPaFgGhfDxtw89HzLiLiUkvv3XE%40babelfish.data-container.net
+```
+
+Response:
+> [`https://babelfish.data-container.net/presentations/zQmNbSAb2CkPjQyPbUGxrubWU7gjbc5KdG6enP1Q6Xa6dEW`](https://babelfish.data-container.net/presentations/zQmNbSAb2CkPjQyPbUGxrubWU7gjbc5KdG6enP1Q6Xa6dEW)  
 
 [back to top](#)
 
