@@ -11,6 +11,12 @@ This page describes step-by-step instructions to demonstrate the various feature
 3. [Metadata Management](3_Metadata/README.md)  
     *Topics: explanation how to create and maintain object metadata for effective data governance and analysis*
 
+4. [Identity Management with `did:oyd`](4_Identities/README.md)  
+    *Topics: creating and managing identities including delegation; attestation through Verifiable Credentials and Presentations*
+
+5. [Tranformation between Data Models](5_Transformations/README.md)  
+    *Topics: defining data models with Semantic Overlay Architecture (SOyA) and validating & transforming of datasets*
+
 &nbsp;
 
 ## Improve the Tutorial
