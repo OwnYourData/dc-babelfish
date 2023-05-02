@@ -7,7 +7,11 @@ This tutorial introduces the use of the **S**emantic **O**verla**y** **A**rchite
 ### Content
 
 [0 - Prerequisites](#0---prerequisites)  
-[1 - Describing Data Models in YAML](#1-describing-data-models-in-yaml)
+[1 - Describing Data Models in YAML](#1-describing-data-models-in-yaml)  
+[2 - Publishing Structures](#2-publishing-structures)  
+[3 - Working with Instances](#3-working-with-instances)  
+[4 - Validating Datasets against Constraints](#4-validating-datasets-against-constraints)  
+[5 - Transforming Datasets](#5-transforming-datasets)  
 
 &nbsp;
 
@@ -30,6 +34,7 @@ Alternatively, you can use a ready-to-use Docker image with all tools pre-instal
 > *Note:* since it makes sense to keep data beyond a Docker session, a directory is mounted in the container to persist files; create this local directory with the command `mkdir ~/.soya`
 
 [back to top ↑](#top)
+
 
 ## 1. Describing Data Models in YAML
 
@@ -200,778 +205,74 @@ curl -s https://playground.data-container.net/employee | jq -r .yml | soya init
 
 ### `overlays` Section
 
-Overlays provide addtional information for a defined base. This information can either be directly included in a structure together with a base or is provided independently and linked to the relevant base. The following types of overlays are pre-defined in the default context (https://ns.ownyourdata.eu/soya/soya-context.json):
-* [Annotation](#annotation)
-* [Format](#format)
-* [Encoding](#encoding)
-* [Form](#form)
-* [Classification](#classification)
-* [Alignment](#alignment)
-* [Validation](#validation)
-* [Transformation](#transformation)
+Overlays provide addtional information for a defined base. This information can either be directly included in a structure together with a base or is provided independently and linked to the relevant base. The following types of overlays are pre-defined in the default context (https://ns.ownyourdata.eu/soya/soya-context.json): Annotation, Format, Encoding, Form, Classification, Alignment, Validation, and Transformation. It is possible to create additional overlay types by using another context.
 
-It is possible to create additional overlay types by using another context.
+*Hint:* use the command `soya template <type>` to show an example for each of the overlay types on the command line (e.g., `soya template annotation`)
 
-#### Annotation
+[back to top ↑](#top)
 
-The *Annoation* overlay provides human-readable text and translations in different languages for base names, labels, and descriptions. In YAML it has the following format:
-
-```yaml
-meta:
-  name: SampleAnnotation
-
-content:
-  overlays: 
-    - type: OverlayAnnotation
-      base: NameOfBase
-      name: SampleAnnotationOverlay
-      class: 
-        label: 
-          en: Name of the base
-          de: der vergebene Name
-      attributes:
-        person: 
-          label: 
-            en: Person
-            de:
-              - die Person
-              - der Mensch
-        dateOfBirth: 
-          label: 
-            en: Date of Birth 
-            de: Geburtsdatum
-          comment: 
-            en: Birthdate of Person
-```
-
-*Hint:* use the command `soya template annotation` to show an example on the command line
-
-<details>
-  <summary>Output</summary>
-
-Use the following command to generate the output:    
-```bash
-soya template annotation | soya init
-```
-
-```json-ld
-{
-  "@context": {
-    "@version": 1.1,
-    "@import": "https://ns.ownyourdata.eu/ns/soya-context.json",
-    "@base": "https://soya.data-container.net/PersonAnnotation/"
-  },
-  "@graph": [
-    {
-      "@id": "Person",
-      "label": {
-        "en": [
-          "Person"
-        ],
-        "de": [
-          "die Person",
-          "der Mensch"
-        ]
-      }
-    },
-    {
-      "@id": "name",
-      "label": {
-        "en": [
-          "Name"
-        ],
-        "de": [
-          "Name"
-        ]
-      }
-    },
-    {
-      "@id": "dateOfBirth",
-      "label": {
-        "en": [
-          "Date of Birth"
-        ],
-        "de": [
-          "Geburtsdatum"
-        ]
-      },
-      "comment": {
-        "en": [
-          "Birthdate of Person"
-        ]
-      }
-    },
-    {
-      "@id": "sex",
-      "label": {
-        "en": [
-          "Gender"
-        ],
-        "de": [
-          "Geschlecht"
-        ]
-      },
-      "comment": {
-        "en": [
-          "Gender (male or female)"
-        ],
-        "de": [
-          "Geschlecht (männlich oder weiblich)"
-        ]
-      }
-    },
-    {
-      "@id": "OverlayAnnotation",
-      "@type": "OverlayAnnotation",
-      "onBase": "Person",
-      "name": "PersonAnnotationOverlay"
-    }
-  ]
-}
-```
-
-</details>
-
-#### Format
-
-The *Format* overlay defines how data is presented to the user. In YAML it has the following format:
-
-```yaml
-meta:
-  name: SampleFormat
-
-content:
-  overlays: 
-    - type: OverlayFormat
-      base: NameOfBase
-      name: SampleFormatOverlay
-      attributes:
-        dateOfBirth: DD/MM/YYYY
-```
-
-*Hint:* use the command `soya template format` to show an example on the command line
-
-<details>
-  <summary>Output</summary>
-
-Use the following command to generate the output:    
-```bash
-soya template format | soya init
-```
-
-```json-ld
-{
-  "@context": {
-    "@version": 1.1,
-    "@import": "https://ns.ownyourdata.eu/ns/soya-context.json",
-    "@base": "https://soya.data-container.net/PersonFormat/"
-  },
-  "@graph": [
-    {
-      "@id": "dateOfBirth",
-      "format": "DD/MM/YYYY"
-    },
-    {
-      "@id": "OverlayFormat",
-      "@type": "OverlayFormat",
-      "onBase": "Person",
-      "name": "PersonFormatOverlay"
-    }
-  ]
-}
-```
-
-</details>
-
-#### Encoding
-
-The *Encoding* overlay specifies the character set encoding used in storing the data of an instance (e.g., UTF-8). In YAML it has the following format:
-
-```yaml
-meta:
-  name: SampleEncoding
-
-content:
-  overlays: 
-    - type: OverlayEncoding
-      base: NameOfBase    
-      name: SampleEncodingOverlay
-      attributes:
-        name: UTF-8
-        company: ASCII
-```
-
-*Hint:* use the command `soya template encoding` to show an example on the command line
-
-<details>
-  <summary>Output</summary>
-
-Use the following command to generate the output:    
-```bash
-soya template encoding | soya init
-```
-
-```json-ld
-{
-  "@context": {
-    "@version": 1.1,
-    "@import": "https://ns.ownyourdata.eu/ns/soya-context.json",
-    "@base": "https://soya.data-container.net/PersonEncoding/"
-  },
-  "@graph": [
-    {
-      "@id": "name",
-      "encoding": "UTF-8"
-    },
-    {
-      "@id": "dateOfBirth",
-      "encoding": "UTF-8"
-    },
-    {
-      "@id": "age",
-      "encoding": "UTF-8"
-    },
-    {
-      "@id": "sex",
-      "encoding": "UTF-8"
-    },
-    {
-      "@id": "OverlayEncoding",
-      "@type": "OverlayEncoding",
-      "onBase": "Person",
-      "name": "PersonEncodingOverlay"
-    }
-  ]
-}
-```
-
-</details>
-
-#### Form
-
-The *Form* overlay allows to configure rendering HTML forms for visualizing and editing instances. In YAML it has the following format:
-
-```yaml
-meta:
-  name: SampleEncoding
-
-content:
-  overlays: 
-    - type: OverlayEncoding
-      base: NameOfBase    
-      name: SampleEncodingOverlay
-      attributes:
-        name: UTF-8
-        company: ASCII
-meta:
-  name: SampleForm
-
-content:
-  overlays: 
-    - type: OverlayForm
-      base: NameOfBase
-      name: SampleFormOverlay
-      schema:
-        type: object
-        properties:
-          name:
-            type: string
-          dateOfBirth:
-            type: string
-            format: date
-        required: []
-      ui:
-        type: VerticalLayout
-        elements:
-        - type: Group
-          label: Person
-          elements:
-          - type: Control
-            scope: "#/properties/name"
-          - type: Control
-            scope: "#/properties/dateOfBirth"
-
-```
-
-*Hint:* use the command `soya template form` to show an example on the command line
-
-<details>
-  <summary>Output</summary>
-
-Use the following command to generate the output:    
-```bash
-soya template form | soya init
-```
-
-```json-ld
-{
-  "@context": {
-    "@version": 1.1,
-    "@import": "https://ns.ownyourdata.eu/ns/soya-context.json",
-    "@base": "https://soya.data-container.net/Person/"
-  },
-  "@graph": [
-    {
-      "@id": "PersonForm",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "dateOfBirth": {
-            "type": "string",
-            "format": "date"
-          }
-        },
-        "required": []
-      },
-      "ui": {
-        "type": "VerticalLayout",
-        "elements": [
-          {
-            "type": "Group",
-            "label": "Person",
-            "elements": [
-              {
-                "type": "Control",
-                "scope": "#/properties/name"
-              },
-              {
-                "type": "Control",
-                "scope": "#/properties/dateOfBirth"
-              }
-            ]
-          }
-        ]
-      },
-      "@type": "OverlayForm",
-      "onBase": "Person",
-      "name": "PersonFormOverlay"
-    }
-  ]
-}
-```
-
-</details>
-
-#### Classification
-
-The *Classification* overlay identifies a subset of available attributes for some purpose (e.g., personally identifiable information, configuring a list view). In YAML it has the following format:
-
-```yaml
-meta:
-  name: SampleClassification
-
-content:
-  overlays: 
-    - type: OverlayClassification
-      base: NameOfBase
-      name: SampleClassificationOverlay
-      attributes:
-        name: class1
-        dateOfBirth: class1
-        sex: 
-          - class1
-          - class2
-```
-
-*Hint:* use the command `soya template classification` to show an example on the command line
-
-<details>
-  <summary>Output</summary>
-
-Use the following command to generate the output:    
-```bash
-soya template classification | soya init
-```
-
-```json-ld
-{
-  "@context": {
-    "@version": 1.1,
-    "@import": "https://ns.ownyourdata.eu/ns/soya-context.json",
-    "@base": "https://soya.data-container.net/PersonClassification/"
-  },
-  "@graph": [
-    {
-      "@id": "name",
-      "classification": [
-        "pii"
-      ]
-    },
-    {
-      "@id": "dateOfBirth",
-      "classification": [
-        "pii"
-      ]
-    },
-    {
-      "@id": "sex",
-      "classification": [
-        "pii",
-        "gdpr_sensitive"
-      ]
-    },
-    {
-      "@id": "OverlayClassification",
-      "@type": "OverlayClassification",
-      "onBase": "Person",
-      "name": "PersonClassificationOverlay"
-    }
-  ]
-}
-```
-
-</details>
-
-#### Alignment
-
-The *Alignment* overlay allows to reference existing RDF definitions (e.g. foaf); this also includes declaring a derived base so that attributes can be pre-filled from a data store holding a record with that base (e.g., don’t require first name, last name to be entered but filled out automatically). In YAML it has the following format:
-
-```yaml
-meta:
-  name: SampleAlignment
-  namespace:
-    foaf: "http://xmlns.com/foaf/0.1/"
-    dc: "http://purl.org/dc/elements/1.1/"
-
-content:
-  overlays: 
-    - type: OverlayAlignment
-      base: NameOfBase
-      name: SampleAlignmentOverlay
-      attributes:
-        name: 
-          - foaf:name
-          - dc:title
-        sex: foaf:gender
-```
-
-*Hint:* use the command `soya template alignment` to show an example on the command line
-
-<details>
-  <summary>Output</summary>
-
-Use the following command to generate the output:    
-```bash
-soya template alignment | soya init
-```
-
-```json-ld
-{
-  "@context": {
-    "@version": 1.1,
-    "@import": "https://ns.ownyourdata.eu/ns/soya-context.json",
-    "@base": "https://soya.data-container.net/PersonAlignment/",
-    "foaf": "http://xmlns.com/foaf/0.1/",
-    "dc": "http://purl.org/dc/elements/1.1/"
-  },
-  "@graph": [
-    {
-      "@id": "name",
-      "rdfs:subPropertyOf": [
-        "foaf:name",
-        "dc:title"
-      ]
-    },
-    {
-      "@id": "sex",
-      "rdfs:subPropertyOf": [
-        "foaf:gender"
-      ]
-    },
-    {
-      "@id": "OverlayAlignment",
-      "@type": "OverlayAlignment",
-      "onBase": "Person",
-      "name": "PersonAlignmentOverlay"
-    }
-  ]
-}
-```
-
-</details>
-
-#### Validation
-
-The *Validation* overlay allows to specify for each attribute in a base range selection, valid options, any other validation methods. Through validation a given JSON-LD record (or an array of records) can be validated against a SOyA structure that includes an validation overlay. Currently, SHACL ([Shapes Constraint Language](https://en.wikipedia.org/wiki/SHACL)) is used in validation overlays. In YAML it has the following format:
-
-```yaml
-meta:
-  name: SampleValidation
-
-content:
-  overlays: 
-    - type: OverlayValidation
-      base: NameOfBase
-      name: SampleValidationOverlay
-      attributes:
-        name: 
-          cardinality: "1..1"
-          length: "[0..20)"
-          pattern: "^[A-Za-z ,.'-]+$"
-        dateOfBirth:
-          cardinality: "1..1"
-          valueRange: "[1900-01-01..*]"                    
-        age: 
-          cardinality: "0..1"
-          valueRange: "[0..*]"
-        sex:
-          cardinality: "0..1"
-          valueOption:
-            - male
-            - female
-            - other
-```
-
-*Hint:* use the command `soya template validation` to show an example on the command line
-
-<details>
-  <summary>Output</summary>
-
-Use the following command to generate the output:    
-```bash
-soya template validation | soya init
-```
-
-```json-ld
-{
-  "@context": {
-    "@version": 1.1,
-    "@import": "https://ns.ownyourdata.eu/ns/soya-context.json",
-    "@base": "https://soya.data-container.net/PersonValidation/"
-  },
-  "@graph": [
-    {
-      "@id": "PersonShape",
-      "@type": "sh:NodeShape",
-      "sh:targetClass": "Person",
-      "sh:property": [
-        {
-          "sh:path": "name",
-          "sh:minCount": 1,
-          "sh:maxCount": 1,
-          "sh:maxLength": 19,
-          "sh:pattern": "^[a-z ,.'-]+$"
-        },
-        {
-          "sh:path": "dateOfBirth",
-          "sh:minCount": 1,
-          "sh:maxCount": 1,
-          "sh:minRange": {
-            "@type": "xsd:date",
-            "@value": "1900-01-01"
-          }
-        },
-        {
-          "sh:path": "age",
-          "sh:maxCount": 1
-        },
-        {
-          "sh:path": "sex",
-          "sh:maxCount": 1,
-          "sh:in": {
-            "@list": [
-              {
-                "label": {
-                  "en": "Female",
-                  "de": "Weiblich"
-                },
-                "@id": "female"
-              },
-              "male",
-              "other"
-            ]
-          }
-        }
-      ],
-      "onBase": "Person",
-      "name": "PersonValidationOverlay"
-    }
-  ]
-}
-```
-
-</details>
-
-#### Transformation
-
-The *Transformation* overlay define a set of transformation rules for a data record. Transformations allow to convert a JSON-LD record (or an array of records) with a well-defined data model (based on a SOyA structure) into another data model using information from a tranformation overlay. Currently, [`jq`](https://stedolan.github.io/jq/) and [`Jolt`](https://github.com/bazaarvoice/jolt/#jolt) are available engines for transformation overlays. 
-
-In YAML a transformation overlay for `jq` has the following format:
-
-```yaml
-meta:
-  name: Sample_jq_transformation
-
-content:
-  overlays: 
-    - type: OverlayTransformation
-      name: SampleJqTransformationOverlay
-      base: NameOfBase
-      engine: jq
-      value: |
-        .["@graph"] | 
-        {
-          "@context": {
-            "@version":1.1,
-            "@vocab":"https://soya.data-container.net/PersonB/"},
-          "@graph": map( 
-            {"@id":.["@id"], 
-            "@type":"PersonB", 
-            "first_name":.["basePerson:firstname"], 
-            "surname":.["basePerson:lastname"], 
-            "birthdate":.["basePerson:dateOfBirth"], 
-            "gender":.["basePerson:sex"]}
-          )
-        }
-```
-
-*Hint:* use the command `soya template transformation.jq` to show an example on the command line
-
-<details>
-  <summary>Output</summary>
-
-Use the following command to generate the output:    
-```bash
-soya template transformation.jq | soya init
-```
-
-```json-ld
-{
-  "@context": {
-    "@version": 1.1,
-    "@import": "https://ns.ownyourdata.eu/ns/soya-context.json",
-    "@base": "https://soya.data-container.net/PersonA_jq_transformation/"
-  },
-  "@graph": [
-    {
-      "@id": "PersonATransformation",
-      "engine": "jq",
-      "value": ".[\"@graph\"] | \n{\n  \"@context\": {\n    \"@version\":1.1,\n    \"@vocab\":\"https://soya.data-container.net/PersonB/\"},\n  \"@graph\": map( \n    {\"@id\":.[\"@id\"], \n    \"@type\":\"PersonB\", \n    \"first_name\":.[\"basePerson:firstname\"], \n    \"surname\":.[\"basePerson:lastname\"], \n    \"birthdate\":.[\"basePerson:dateOfBirth\"], \n    \"gender\":.[\"basePerson:sex\"]}\n  )\n}\n",
-      "@type": "OverlayTransformation",
-      "onBase": "PersonA",
-      "name": "TransformationOverlay"
-    }
-  ]
-}
-```
-
-</details>
-
-
-In YAML a transformation overlay for `Jolt` has the following format:
-
-```yaml
-meta:
-  name: Sample_jolt_Transformation
-
-content:
-  overlays: 
-    - type: OverlayTransformation
-      name: SampleJoltTransformationOverlay
-      base: PersonA
-      engine: jolt
-      value:
-        - operation: shift
-          spec: 
-            "\\@context":
-              "\\@version": "\\@context.\\@version"
-              "#https://soya.data-container.net/PersonB/": "\\@context.\\@vocab"
-            "\\@graph": 
-              "*": 
-                "#PersonB": "\\@graph[#2].\\@type"
-                "\\@id": "\\@graph[#2].\\@id"
-                "basePerson:firstname": "\\@graph[#2].first_name"
-                "basePerson:lastname": "\\@graph[#2].surname"
-                "basePerson:dateOfBirth": "\\@graph[#2].birthdate"
-                "basePerson:sex": "\\@graph[#2].gender"
-```
-
-*Hint:* use the command `soya template transformation.jolt` to show an example on the command line
-
-<details>
-  <summary>Output</summary>
-
-Use the following command to generate the output:    
-```bash
-soya template transformation.jolt | soya init
-```
-
-```json-ld
-{
-  "@context": {
-    "@version": 1.1,
-    "@import": "https://ns.ownyourdata.eu/ns/soya-context.json",
-    "@base": "https://soya.data-container.net/PersonA_jolt_Transformation/"
-  },
-  "@graph": [
-    {
-      "@id": "PersonATransformation",
-      "engine": "jolt",
-      "value": [
-        {
-          "operation": "shift",
-          "spec": {
-            "\\@context": {
-              "\\@version": "\\@context.\\@version",
-              "#https://soya.data-container.net/PersonB/": "\\@context.\\@vocab"
-            },
-            "\\@graph": {
-              "*": {
-                "#PersonB": "\\@graph[#2].\\@type",
-                "\\@id": "\\@graph[#2].\\@id",
-                "basePerson:firstname": "\\@graph[#2].first_name",
-                "basePerson:lastname": "\\@graph[#2].surname",
-                "basePerson:dateOfBirth": "\\@graph[#2].birthdate",
-                "basePerson:sex": "\\@graph[#2].gender"
-              }
-            }
-          }
-        }
-      ],
-      "@type": "OverlayTransformation",
-      "onBase": "PersonA",
-      "name": "TransformationOverlay"
-    }
-  ]
-}
-```
-
-</details>
 
 ## 2. Publishing Structures
+After creating a standardized definition of a data model it can be uploaded or "pushed" to an online repository, where it can be accessed and shared by other developers and team members. To run your own instance of a SOyA repository use the [sources on Github](https://github.com/OwnYourData/soya) or the [`oydeu/soya-base` image on Dockerhub](https://hub.docker.com/r/oydeu/soya-base). For the examples in this tutorial we will use the public SOyA repository hosted at https://soya.ownyourdata.eu.
 
-### Transform YAML to JSON-LD (`soya init`)
+### Upload to Repository (`soya init-push`)
+As already shown in section 1 the command `soya init` transforms a YAML file into JSON-LD and thus creates a standard-conform RDF representation of the data model. To publish the JSON-LD the command `soya push` reads a valid SOyA structure from STDIN and stores it in a repository.
 
-### Upload to Repository (`soya push`)
+:::info  
+**Example**
+continuing the example from above we can perform the following commands on the command line  
+```bash
+cat org_simple.yml | soya init | soya push
+```
+:::
 
-### Get Information (`soya info`)
-
-### Compare with Existing Structure (`soya similar`)
 
 ### Download from Repository (`soya pull`)
 
-### Use JSON-LD Playground (`soya playground`)
+
+[back to top ↑](#top)
+
 
 ## 3. Working with Instances
 
 ### Transform flat-JSON Records into JSON-LD (`soya acquire`)
 
-### Validate Record against a Structure (`soya validate`)
+### Editing Records in HTML Forms (`soya form`)
+
+
+[back to top ↑](#top)
+
+
+## 4. Validating Datasets against Constraints
+
+### Validation Overlay
+
+### Checking Conformance (`soya validate`)
+
+[back to top ↑](#top)
+
+
+## 5. Transforming Datasets
+
+### Transformation Overlay
 
 ### Transfrom Instances between Structures (`soya transform`)
 
-### Store Instances in a Semantic Container (`soya push`)
-
-## 4. Editing SOyA Instances in HTML Forms
-
-### JSON Forms Engine (`soya form`)
-
-### Configure Forms Rendering
-
-### Semantic Container and SOyA
+### Alignment Overlays and Mapping (`soya map`)
 
 
-&nbsp;    
+[back to top](#)
+
+
+&nbsp;
+
+## About  
+
+<img align="right" src="https://raw.githubusercontent.com/OwnYourData/dc-babelfish/main/app/assets/images/logo-ngi-ontochain-positive.png" height="150">This project has received funding from the European Union’s Horizon 2020 research and innovation program through the [NGI ONTOCHAIN program](https://ontochain.ngi.eu/) under cascade funding agreement No 957338.
+
+
+<br clear="both" />
+
+## License
+
+[MIT License 2023 - OwnYourData.eu](https://raw.githubusercontent.com/OwnYourData/dc-babelfish/main/LICENSE)
