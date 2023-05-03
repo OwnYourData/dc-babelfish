@@ -218,14 +218,21 @@ After creating a standardized definition of a data model it can be uploaded or "
 ### Upload to Repository (`soya init-push`)
 As already shown in section 1 the command `soya init` transforms a YAML file into JSON-LD and thus creates a standard-conform RDF representation of the data model. To publish the JSON-LD the command `soya push` reads a valid SOyA structure from STDIN and stores it in a repository.
 
-:::info  
-**Example**
-continuing the example from above we can perform the following commands on the command line  
+*Example:* continuing the [example from above](examples/org_simple.yml) we can chain the following commands on the command line  
 ```bash
 cat org_simple.yml | soya init | soya push
 ```
-:::
 
+And since the process of converting and uploading a SOyA structure is a very common task there is also a short-cut as `soya init-push` available:
+```bash
+curl -s https://playground.data-container.net/employee | jq -r .yml | soya init-push
+```
+
+*Note:* if publishing the SOyA strcucture was successful the name under which it is available is shown (otherwise the specific error is displayed)
+```
+$ cat org_simple.yml | soya init-push
+Organisation
+```
 
 ### Download from Repository (`soya pull`)
 
