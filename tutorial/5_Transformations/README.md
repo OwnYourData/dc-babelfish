@@ -337,7 +337,7 @@ echo '{"name":"OwnYourData", "founded": "2015-10-26"}' | soya acquire Organisati
 
 ### Transformation Overlay
 
-* different transformation engines: [jq](https://stedolan.github.io/jq/), [jolt](https://github.com/bazaarvoice/jolt, [handlebars](https://handlebarsjs.com/)
+* different transformation engines: [jq](https://stedolan.github.io/jq/), [jolt](https://github.com/bazaarvoice/jolt), [handlebars](https://handlebarsjs.com/)
 
 ### Transfrom Instances between Structures (`soya transform`)
 
