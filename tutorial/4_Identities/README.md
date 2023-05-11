@@ -169,23 +169,181 @@ https://resolver.identity.foundation/#did:oyd:zQmZ12f8p68XN4tRsWQY8evKBwNdEiCuWz
 
 ## 3 - DID Lifecycle
 
-* Update
+Managing a DID also involves the basic operations of updating and deactivating:
+
+* Update a DID
+  ```bash
+  # create DID: did:oyd:zQmRGSK8cpgCPBAzHDZzDkMyJuNeXH9NBo1mHVHvxj2mFt9
+  echo '{"did":"new"}' | oydid create --doc-pwd pwd1 --rev-pwd pwd2 -z 1 -s
+
+  # update
+  echo '{"did":"updated"}' | oydid update --doc-pwd pwd3 --rev-pwd pwd4 --old-doc-pwd pwd1 --old-rev-pwd pwd2 -z 2 -s did:oyd:zQmRGSK8cpgCPBAzHDZzDkMyJuNeXH9NBo1mHVHvxj2mFt9
+  ```
+
 * Revoke
+  ```bash
+  # revoke DID from above
+  oydid revoke --doc-pwd pwd3 --rev-pwd pwd4 did:oyd:zQmaRujAgFCfSQ3v6utQG5yUCtMhbgX5xaEEXoJ5eC6KFzR
+  ```
+
+*Note:* you cannot resolve a revoked DID (output: `Error: cannot resolve DID (on reading DID)`) but the logs are still available:
+```bash
+oydid logs did:oyd:zQmaRujAgFCfSQ3v6utQG5yUCtMhbgX5xaEEXoJ5eC6KFzR
+```
 
 [back to top](#)
 
 ## 4 - Delegation
 
-* delegating doc-key
-* delegating rev-key
+The process of delegation involves publishing a public key by an actor and confirming this delegation capability by the DID controller. Based on the architecture of the `did:oyd` method there are 2 keys for managing the DID: a `document key` to be used for any operations performed with the DID (e.g., working with Credentials) and a `revocation key` for publishing updates of the DID itself.
+
+We use the following DID for the examples below:
+```bash
+echo '{"example":"delegate"}' | oydid create --doc-pwd pwd1 --rev-pwd pwd2 -z 1 -s
+# created did:oyd:zQmc5pWjZxFsvaTupL7p3cUzZvrPp86TQMxPerzF3tjzDHB
+```
+
+**Publishing a delegation key**  
+Delegation for the document key:
+```bash
+oydid delegate --doc-pwd my-doc-delegate-key -z 2 did:oyd:zQmc5pWjZxFsvaTupL7p3cUzZvrPp86TQMxPerzF3tjzDHB
+# delegate log record zQmQBXznhmgfEqTY45knDswHoGxhvV5AHDPajwE6Hu1MPst
+```
+
+Delegation for the revocation key:
+```bash
+oydid delegate --rev-pwd my-rev-delegate-key -z 2 did:oyd:zQmc5pWjZxFsvaTupL7p3cUzZvrPp86TQMxPerzF3tjzDHB
+# delegate log record zQmRjpjU3je6uLY5qKV7B1F235ZEzPvo5xRNKJbzv72ygQV
+```
+
+*Note:* it is not necessary that the delegator discloses the private key to anyone - only the public key is registered as request for confirmation in the DIDs DAG
+
+
+**Confirming delegation records**  
+For a delegation to become active it is required that the controller of the DID "confirms" delegation requests:
+
+```bash
+echo '["zQmQBXznhmgfEqTY45knDswHoGxhvV5AHDPajwE6Hu1MPst","zQmRjpjU3je6uLY5qKV7B1F235ZEzPvo5xRNKJbzv72ygQV"]' | oydid confirm --old-doc-pwd pwd1 --old-rev-pwd pwd2 --doc-pwd pwd3 --rev-pwd pwd4 -z 3 -s did:oyd:zQmc5pWjZxFsvaTupL7p3cUzZvrPp86TQMxPerzF3tjzDHB
+```
+
+*Note:* the input for `oydid confirm` is an array of log record references and since it is actually an upate to the DID it requires the same information (old and new document and revocation keys)
+
+**Listing available delegations**
+To list currently active keys use the `pubkeys` operation:
+```bash
+# list document keys
+oydid pubkeys did:oyd:zQmc5pWjZxFsvaTupL7p3cUzZvrPp86TQMxPerzF3tjzDHB
+
+# list revocation keys
+oydid pubkeys --revocation did:oyd:zQmc5pWjZxFsvaTupL7p3cUzZvrPp86TQMxPerzF3tjzDHB
+```
 
 [back to top](#)
 
 ## 5 - Verifiable Credentials & Verifiable Presentations
 
-* creating a Verifiable Credential
-* creating only the proof for a VC
+An important application for DIDs is creating an attestation. With OYDID you can create standard-conform Verifiable Credentials and Verifiable Presentations. We use the following DIDs for the examples below:
+```bash
+echo '{"role":"issuer"}' | oydid create --doc-pwd pwd1 --rev-pwd pwd2 -z 1 -s
+# created did:oyd:zQmcNqEN5AJBM4pkfNaqaGvEJWRC99RvwWzLZKa4fruyQhi
+echo '{"role":"holder"}' | oydid create --doc-pwd pwd1 --rev-pwd pwd2 -z 1 -s
+# created did:oyd:zQmaYFdoySUGip6YX5nueoKn5ATQoAjoj3RFSqbrXCZE21y
+```
+
+
+* Creating a Verifiable Credential  
+  provide as input the `credentialSubject`  
+  ```bash
+  echo '{"sky":"blue"}' | oydid vc --issuer did:oyd:zQmcNqEN5AJBM4pkfNaqaGvEJWRC99RvwWzLZKa4fruyQhi  --doc-pwd pwd1 --holder did:oyd:zQmaYFdoySUGip6YX5nueoKn5ATQoAjoj3RFSqbrXCZE21y
+  ```
+  Output:
+  ```json-ld
+  {
+    "@context": [
+      "https://www.w3.org/ns/credentials/v2"
+    ],
+    "type": [
+      "VerifiableCredential"
+    ],
+    "issuer": "did:oyd:zQmcNqEN5AJBM4pkfNaqaGvEJWRC99RvwWzLZKa4fruyQhi",
+    "issuanceDate": "2023-05-06T23:04:50Z",
+    "credentialSubject": {
+      "id": "did:oyd:zQmaYFdoySUGip6YX5nueoKn5ATQoAjoj3RFSqbrXCZE21y",
+      "sky": "blue"
+    },
+    "proof": {
+      "type": "Ed25519Signature2020",
+      "verificationMethod": "did:oyd:zQmcNqEN5AJBM4pkfNaqaGvEJWRC99RvwWzLZKa4fruyQhi",
+      "proofPurpose": "assertionMethod",
+      "proofValue": "z56MucJgHbDaxsyw41RpEZKJwpphTT2GMPLZBJLyxbZox3LSsVWu75i321cqnFZTCw4qh37UKuLRYVGBiqf9VxoSB"
+    },
+    "identifier": "zQmZYbxt96d2p6UJCt28GL6i3Fuzcc2n21RNJoRqoZoYGdh"
+  }
+  ```
+
+* creating only the proof for a Verifiable Credential  
+  in case you want to build a Verifiable Credentials with multiple issuers (e.g., for a Data Agreement to be signed by multiple parties) you can also create only the proof section for a given `credentialSubject`:  
+  ```bash
+  echo '{"sky":"blue"}' | oydid vc-proof --issuer did:oyd:zQmcNqEN5AJBM4pkfNaqaGvEJWRC99RvwWzLZKa4fruyQhi  --doc-pwd pwd1 --holder did:oyd:zQmaYFdoySUGip6YX5nueoKn5ATQoAjoj3RFSqbrXCZE21y
+  ```
+  Output:
+  ```json-ld
+  {
+    "type": "Ed25519Signature2020",
+    "verificationMethod": "did:oyd:zQmcNqEN5AJBM4pkfNaqaGvEJWRC99RvwWzLZKa4fruyQhi",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z56MucJgHbDaxsyw41RpEZKJwpphTT2GMPLZBJLyxbZox3LSsVWu75i321cqnFZTCw4qh37UKuLRYVGBiqf9VxoSB"
+  }
+  ```
+
 * creating a Verifiable Presentation
+  Use the following command for the Holder to counter-sign a Verifiable Credential and publish it as Verifiable Presentation:
+  ```bash
+  echo '{"sky":"blue"}' | oydid vc --issuer did:oyd:zQmcNqEN5AJBM4pkfNaqaGvEJWRC99RvwWzLZKa4fruyQhi  --doc-pwd pwd1 --holder did:oyd:zQmaYFdoySUGip6YX5nueoKn5ATQoAjoj3RFSqbrXCZE21y | \
+  oydid vp --doc-pwd pwd1 --holder did:oyd:zQmaYFdoySUGip6YX5nueoKn5ATQoAjoj3RFSqbrXCZE21y
+  ```
+  Output:
+  ```json-ld
+  {
+    "@context": [
+      "https://www.w3.org/ns/credentials/v2"
+    ],
+    "type": [
+      "VerifiablePresentation"
+    ],
+    "verifiableCredential": [
+      {
+        "@context": [
+          "https://www.w3.org/ns/credentials/v2"
+        ],
+        "type": [
+          "VerifiableCredential"
+        ],
+        "issuer": "did:oyd:zQmcNqEN5AJBM4pkfNaqaGvEJWRC99RvwWzLZKa4fruyQhi",
+        "issuanceDate": "2023-05-06T23:15:59Z",
+        "credentialSubject": {
+          "id": "did:oyd:zQmaYFdoySUGip6YX5nueoKn5ATQoAjoj3RFSqbrXCZE21y",
+          "sky": "blue"
+        },
+        "proof": {
+          "type": "Ed25519Signature2020",
+          "verificationMethod": "did:oyd:zQmcNqEN5AJBM4pkfNaqaGvEJWRC99RvwWzLZKa4fruyQhi",
+          "proofPurpose": "assertionMethod",
+          "proofValue": "z56MucJgHbDaxsyw41RpEZKJwpphTT2GMPLZBJLyxbZox3LSsVWu75i321cqnFZTCw4qh37UKuLRYVGBiqf9VxoSB"
+        },
+        "identifier": "zQmPMtZMaic8uJTq79eXtuiWysLgXN9pWaokcJ1ce7XQmHo"
+      }
+    ],
+    "proof": {
+      "type": "Ed25519Signature2020",
+      "created": "2023-05-06T23:15:59Z",
+      "verificationMethod": "did:oyd:zQmaYFdoySUGip6YX5nueoKn5ATQoAjoj3RFSqbrXCZE21y",
+      "proofPurpose": "authentication",
+      "proofValue": "z5fhtrRrV1SvonjxysGofhuG5YnEBCDCTsH4ZGXzpBWyayemLEZ8HNJw74aarcHifZJBxbMVpjFoHwhrnVUrzoUvR"
+    },
+    "identifier": "zQmXwvFvFkqRwZQq95fLxjBfmXo8XWbs7pGHCtTH8nC9aS2"
+  }
+  ```
 
 [back to top](#)
 

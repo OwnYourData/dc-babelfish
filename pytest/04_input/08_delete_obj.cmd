@@ -1,0 +1,1 @@
+curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $USER_TOKEN" -X DELETE $GW_HOST/object/7

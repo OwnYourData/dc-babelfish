@@ -211,7 +211,7 @@ class OrganizationsController < ApplicationController
         id = params[:id]
 
         # validate
-        @store = Store.find(id)
+        @store = Store.find(id) rescue nil
         if @store.nil?
             render json: {"error": "not found"},
                    status: 404

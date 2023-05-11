@@ -8,7 +8,7 @@ from pathlib import Path
 
 # test groups
 # 01 - organisations
-# 02 - users
+# 02 - users <- current
 
 # requires
 # $MASTER_TOKEN

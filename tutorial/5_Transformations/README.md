@@ -364,8 +364,11 @@ automatically generate handlebar template with soya map based on alignments:
 * run `soya map OYD_Company OYD_Organisation` (create a mapping from OYD_Company to OYD_Organisation)
   ```
   {
-    "name": "{{registered_name}}",
-    "address": "{{location}}"
+    "registered_name": "{{legalName}}",
+    "contact": {
+      "number": "{{phone}}"
+    },
+    "location": "{{address}}"
   }
   ```
 

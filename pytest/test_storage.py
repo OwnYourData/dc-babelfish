@@ -10,7 +10,7 @@ from pathlib import Path
 # 01 - organisations
 # 02 - users
 # 03 - services
-# 04 - storage
+# 04 - storage <- current
 
 # requires
 # $MASTER_TOKEN

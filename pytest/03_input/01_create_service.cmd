@@ -1,1 +1,1 @@
-curl -H "Content-Type: application/json" -H "Authorization: Bearer $MASTER_TOKEN" -d @- -X POST $GW_HOST/service/ | jq -r '.name'
+curl -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d @- -X POST $GW_HOST/service/ | jq -r '.name'
