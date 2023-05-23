@@ -8,10 +8,6 @@ class UsersController < ApplicationController
 
     def create
         data = params.except(:controller, :action, :user)
-        meta = {
-            "type": "user",
-            "organization-id": doorkeeper_org
-        }
         org_id = data["organization-id"]
 
         if doorkeeper_org != org_id.to_s && doorkeeper_scope != "admin"
@@ -23,6 +19,17 @@ class UsersController < ApplicationController
             render json: {"error": "invalid 'name'"},
                    status: 400
             return
+        end
+        if !data["meta"].nil?
+            meta = data["meta"]
+            data = data.except["meta"]
+            meta["type"] = "user"
+            meta["organization-id"] = doorkeeper_org
+        else
+            meta = {
+                "type": "user",
+                "organization-id": doorkeeper_org
+            }
         end
 
         dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
@@ -109,11 +116,15 @@ class UsersController < ApplicationController
             meta_oauth = true
             input_meta = data["meta"].except("oauth")
         end
-        if !input_meta.nil?
-            meta = meta.merge(input_meta)
+        if !data["meta"].nil?
+            if meta_oauth
+                meta = meta.merge(input_meta)
+            else
+                meta = meta.merge(data["meta"])
+            end
             data = data.except("meta")
-        end        
-        if meta["organization-id"] != doorkeeper_org && doorkeeper_scope != "admin"
+        end
+        if meta["organization-id"].to_s != doorkeeper_org.to_s && doorkeeper_scope != "admin"
             render json: {"error": "Not authorized"},
                    status: 401
             return
@@ -198,6 +209,60 @@ class UsersController < ApplicationController
                status: 200
     end
 
+    def current
+        id = nil
+        @oauth = Doorkeeper::Application.find(doorkeeper_token.application_id)
+        org_id = @oauth.organization_id
+        user_name = @oauth.name
+        Store.where(key: "user_" + org_id.to_s).each do |user|
+            un = JSON.parse(user.item)["name"].to_s rescue ""
+            if un == user_name
+                id = user.id
+            end
+        end
+        show_meta = params[:show_meta]
+        @store = Store.find(id) rescue nil
+        if @store.nil?
+            render json: {"error1": "not found"},
+                   status: 404
+            return
+        end
+        data = @store.item
+        meta = @store.meta
+        if !(data.is_a?(Hash) || data.is_a?(Array))
+            data = JSON.parse(data) rescue nil
+        end
+        if !(meta.is_a?(Hash) || meta.is_a?(Array))
+            meta = JSON.parse(meta) rescue nil
+        end
+        if meta["type"] != "user"
+            render json: {"error2": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error3": "not found"},
+                   status: 404
+            return
+        end
+        org_id = meta["organization-id"]
+        if doorkeeper_org != org_id.to_s && doorkeeper_scope != "admin"
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+
+        if show_meta.to_s == "TRUE"
+            retVal = meta.merge({"dri" => @store.dri})
+            retVal = retVal.merge({"created-at" => @store.created_at})
+            retVal = retVal.merge({"updated-at" => @store.updated_at})
+        else
+            retVal = data
+        end
+        render json: retVal.merge({"user-id" => @store.id}),
+               status: 200
+    end
+
     def wallet
         id = params[:id]
         @store = Store.find(id) rescue nil
@@ -236,7 +301,9 @@ class UsersController < ApplicationController
             @dk = @dk.first
             retVal["oauth"] = {"client-id": @dk.uid, "client-secret": @dk.secret}
         end
-        retVal["dlt"] = ["not yet available"]
+        if !meta["dlt"].nil?
+            retVal["dlt"] = meta["dlt"]
+        end
         # {
         #   "user-id": 1,
         #   "dlt": [

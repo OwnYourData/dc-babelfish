@@ -14,7 +14,8 @@ class ObjectsController < ApplicationController
         end
         meta = {
             "type": "object",
-            "organization-id": doorkeeper_org
+            "organization-id": doorkeeper_org,
+            "delete": false
         }
         if !data["meta"].nil?
             meta = meta.merge(data["meta"])
@@ -32,6 +33,9 @@ class ObjectsController < ApplicationController
                 meta["collection-id"] = col_id.to_s
                 data = data.except("collection-id")
             end
+        else
+            meta["collection-id"] = col_id.to_s
+            data = data.except("collection-id")
         end
         # @col = Store.find(col_id) rescue nil
         col = getCollection(col_id)
@@ -55,7 +59,7 @@ class ObjectsController < ApplicationController
         store = getStorage_by_dri(dri)
         # @store = Store.find_by_dri(dri)
         if store.nil?
-            store = newStorage(col_id, data.to_json, meta.to_json, dri, "object_" + col_id.to_s)
+            store = newStorage(col_id, data, meta, dri, "object_" + col_id.to_s)
             # @store = Store.new(item: data.to_json, meta: meta.to_json, dri: dri, key: "object_" + col_id.to_s)
             # @store.save
         end
@@ -156,7 +160,7 @@ class ObjectsController < ApplicationController
         end
 
         # update data
-        update_store = updateStorage(col_id, store[:id], data.to_json, meta.to_json, dri, "object_" + col_id.to_s)
+        update_store = updateStorage(col_id, store[:id], data, meta, dri, "object_" + col_id.to_s)
         if update_store[:id].nil?
             if update_store[:error].to_s == ""
                 render json: {"error": "cannot save update"},
@@ -189,7 +193,7 @@ class ObjectsController < ApplicationController
         end
 
         # validate
-        data = store[:data].transform_keys(&:to_s)
+        data = store[:data].transform_keys(&:to_s) rescue store[:data]
         meta = store[:meta].transform_keys(&:to_s)
         if meta["type"] != "object"
             render json: {"error": "not found"},
@@ -206,7 +210,7 @@ class ObjectsController < ApplicationController
                    status: 401
             return
         end
-        col_id = data["collection-id"]
+        col_id = meta["collection-id"]
 
         # store payload
         pl_meta = {
@@ -215,16 +219,15 @@ class ObjectsController < ApplicationController
             "organization-id": doorkeeper_org
         }
         if data["payload"].to_s == ""
-            pl = newStorage(col_id, payload.to_json, pl_meta.to_json, payload_dri, nil)
+            pl = newStorage(col_id, payload, pl_meta, payload_dri, nil)
             # @pl = Store.new(item: payload.to_json, meta: pl_meta.to_json, dri: payload_dri)
         else
             pl = getStorage_by_dri(payload_dri)
             # @pl = Store.find_by_dri(payload_dri)
             if pl.nil?
-                pl = newStorage(col_id, payload.to_json, pl_meta.to_json, payload_dri, nil)
+                pl = newStorage(col_id, payload, pl_meta, payload_dri, nil)
             else
-                pl = updateStorage(col_id, pl[:id], payload.to_json, pl_meta.to_json, dri, nil)
-                @pl.item = payloaddri
+                pl = updateStorage(col_id, pl[:id], payload, pl_meta, payload_dri, nil)
             end
         end
         if pl[:id].nil?
@@ -238,7 +241,7 @@ class ObjectsController < ApplicationController
         else
             data["payload"] = payload_dri
             dri = Oydid.hash(Oydid.canonical({"data": data, "meta": meta}))
-            update_store = updateStorage(col_id, store[:id], data.to_json, meta.to_json, dri, "object_" + col_id.to_s)
+            update_store = updateStorage(col_id, store[:id], data, meta, dri, "object_" + col_id.to_s)
             if update_store[:id].nil?
                 if update_store[:error].to_s == ""
                     render json: {"error": "cannot save update to payload"},
@@ -264,8 +267,14 @@ class ObjectsController < ApplicationController
                    status: 404
             return
         end
-        data = store[:data].transform_keys(&:to_s)
-        meta = store[:meta].transform_keys(&:to_s)
+        data = store[:data]
+        if data.is_a?(Hash)
+            data = data.transform_keys(&:to_s)
+        end
+        meta = store[:meta]
+        if meta.is_a?(Hash)
+            meta = meta.transform_keys(&:to_s)
+        end
         if meta["type"] != "object"
             render json: {"error": "not found"},
                    status: 404
@@ -281,14 +290,15 @@ class ObjectsController < ApplicationController
                    status: 401
             return
         end
+        store = store.transform_keys(&:to_s)
         if show_meta.to_s == "TRUE"
-            retVal = meta.merge({"dri" => store[:dri]})
-            retVal = retVal.merge({"created-at" => store[:"created-at"]})
-            retVal = retVal.merge({"updated-at" => store[:"updated_at"]})
+            retVal = meta.merge({"dri" => store["dri"]})
+            retVal = retVal.merge({"created-at" => store["created-at"]})
+            retVal = retVal.merge({"updated-at" => store["updated-at"]})
         else
             retVal = data
         end
-        render json: retVal.merge({"object-id" => store[:id]}),
+        render json: retVal.merge({"object-id" => store["id"]}),
                status: 200
     end
 
@@ -405,6 +415,56 @@ class ObjectsController < ApplicationController
                status: 200
     end
 
+    # meta data for object
+    def objmet
+        id = params[:id]
+        store = getStorage_by_id(id)
+        # @store = Store.find(id)
+        if store.nil?
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        data = store[:data]
+        if data.is_a?(Hash)
+            data = data.transform_keys(&:to_s)
+        end
+        meta = store[:meta]
+        if meta.is_a?(Hash)
+            meta = meta.transform_keys(&:to_s)
+        end
+        if meta["type"] != "object"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["delete"].to_s.downcase == "true"
+            render json: {"error": "not found"},
+                   status: 404
+            return
+        end
+        if meta["organization-id"].to_s != doorkeeper_org.to_s
+            render json: {"error": "Not authorized"},
+                   status: 401
+            return
+        end
+        payload_dri = data["payload"].to_s
+        if payload_dri == ""
+            render json: {"error": "no payload attached to object"},
+                   status: 400
+            return
+        end
+        pl = getStorage_by_dri(payload_dri)
+        # @pl = Store.find_by_dri(payload_dri)
+        if pl.nil?
+            render json: {"error": "no payload meta data attached to object"},
+                   status: 404
+            return
+        end
+        render json: pl[:meta],
+               status: 200
+    end
+
     def delete
         # input
         id = params[:id]
@@ -436,8 +496,8 @@ class ObjectsController < ApplicationController
         end
 
         meta = meta.merge("delete": true)
-        col_id = data["collection-id"]
-        update_store = updateStorage(col_id, store[:id], data.to_json, meta.to_json, nil, nil)
+        col_id = meta["collection-id"]
+        update_store = updateStorage(col_id, store[:id], data, meta, nil, nil)
         if update_store[:id].nil?
             if update_store[:error].to_s == ""
                 render json: {"error": "cannot delete"},

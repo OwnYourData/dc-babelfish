@@ -1,1 +1,1 @@
-{"name":"test", "collection-id":6}
+{"name":"test", "collection-id":$COLLECTION_ID}

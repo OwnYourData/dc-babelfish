@@ -1,6 +1,6 @@
 class ApplicationController < ActionController::API
     def version
-        render json: {"service": "babelfish", "version": VERSION.to_s, "oydid-gem": Gem.loaded_specs["oydid"].version.to_s}.to_json,
+        render json: {"service": "babelfish", "version": "0.2.0", "oydid-gem": Gem.loaded_specs["oydid"].version.to_s}.to_json,
                status: 200
     end
 

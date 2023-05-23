@@ -21,12 +21,14 @@ scope '/' do
     match 'organization/:id',      to: 'organizations#delete',  via: 'delete'
 
     # User hanlding
-    match 'user/:id',        to: 'users#read',   via: 'get'
-    match 'user/:id/meta',   to: 'users#read',   via: 'get', defaults: { show_meta: "TRUE"}
-    match 'user/:id/wallet', to: 'users#wallet', via: 'get'
-    match 'user',            to: 'users#create', via: 'post'
-    match 'user/:id',        to: 'users#update', via: 'put'
-    match 'user/:id',        to: 'users#delete', via: 'delete'
+    match 'user',              to: 'users#create',  via: 'post'
+    match 'user/current',      to: 'users#current', via: 'get'
+    match 'user/current/meta', to: 'users#current', via: 'get', defaults: { show_meta: "TRUE"}
+    match 'user/:id',          to: 'users#read',    via: 'get'
+    match 'user/:id/meta',     to: 'users#read',    via: 'get', defaults: { show_meta: "TRUE"}
+    match 'user/:id/wallet',   to: 'users#wallet',  via: 'get'
+    match 'user/:id',          to: 'users#update',  via: 'put'
+    match 'user/:id',          to: 'users#delete',  via: 'delete'
 
     # Collection handling
     match 'collection/list',        to: 'collections#list',    via: 'get'
@@ -42,6 +44,7 @@ scope '/' do
     match 'object/:id/meta',            to: 'objects#read',   via: 'get', defaults: { show_meta: "TRUE"}
     match 'object/:id/write',           to: 'objects#write',  via: 'put'
     match 'object/:id/read',            to: 'objects#object', via: 'get'
+    match 'object/:id/read/meta',       to: 'objects#objmet', via: 'get'
     match 'object/:object_id/:user_id', to: 'objects#access', via: 'get'
     match 'object',                     to: 'objects#create', via: 'post'
     match 'object/:id',                 to: 'objects#update', via: 'put'

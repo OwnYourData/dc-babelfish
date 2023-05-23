@@ -1,1 +1,1 @@
-curl -s -H "Authorization: Bearer $USER_TOKEN" $GW_HOST/object/7/2 | jq -rc '{"name":.name, "access":.access}'
+curl -s -H "Authorization: Bearer $USER_TOKEN" $GW_HOST/object/$OBJECT_ID/$USER_ID | jq -rc '{"name":.name, "access":.access}'

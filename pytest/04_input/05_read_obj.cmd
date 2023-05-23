@@ -1,1 +1,1 @@
-curl -s -H "Authorization: Bearer $USER_TOKEN" $GW_HOST/object/7 | jq -r '."object-id"'
+curl -s -H "Authorization: Bearer $USER_TOKEN" $GW_HOST/object/$OBJECT_ID | jq -r '."object-id"'
