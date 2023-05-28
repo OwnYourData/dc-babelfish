@@ -67,6 +67,9 @@ def test_01_organisations(fp, input):
 
 # https://convex.world/testnet/account/48
 
+# check transaction at https://convex.world/sandbox
+# (get n/documents 3)
+
 # curl -H "Authorization: Bearer $USER_TOKEN" https://babelfish.data-container.net/user/current
 # echo '{"name":"admin", "meta":{"dlt":[{"type": "Convex", "account":"48", "seed":"7e4f674420a17067115cb26490351510cd25f0467795b725628e66d72d27ad4b"}]}}' | curl -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" -d @- -X PUT https://babelfish.data-container.net/user/23
 

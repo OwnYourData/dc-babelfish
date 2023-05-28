@@ -1,1 +1,1 @@
-{"name": "SemCon Test Repo", "storage":{"type": "Semantic Container", "url": "$SEMCON_URL"}}
+{"name": "SemCon Test Repo", "storage":{"type": "Semantic Container", "service-id": 339, "url": "$SEMCON_URL"}}

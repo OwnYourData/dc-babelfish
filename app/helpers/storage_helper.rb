@@ -91,40 +91,11 @@ module StorageHelper
         end
         case on_chain_storage
         when "Bellecour"
-            config_chain_url = ENV["CHAIN_URL"] || "https://bellecour.iex.ec"
-            config_contract_address = ENV["CONTRACT_ADDRESS"] || "0xF31A125fb44E0c2dca45c2665F272e9fc09f92AE"
-            file_path = Rails.root.join('lib', 'contract_abi.json')
-            config_contract_abi = ENV["CONTRACT_ABI"] || File.read(file_path)
-            config_contract_function = ENV["CONTRACT_FUNCTION"] || "StoreInLogs"
-            config_payload = 'id:' + id.to_s + ',dri:' + dri.to_s
-            config_private_key = ENV["BELLECOUR_PRIVATE_KEY"]
-
-            file_path = Rails.root.join('lib', 'contract.js')
-            content = File.read(file_path)
-            content = content.gsub("$CHAIN_URL", config_chain_url.to_s)
-            content = content.gsub("$CONTRACT_ADDRESS", config_contract_address.to_s)
-            content = content.gsub("$CONTRACT_ABI", config_contract_abi.to_s)
-            content = content.gsub("$CONTRACT_FUNCTION", config_contract_function.to_s)
-            content = content.gsub("$PAYLOAD", config_payload.to_s)
-            content = content.gsub("$PRIVATE_KEY", config_private_key.to_s)
-
-            require 'open3'
-            cmd = "echo '" + content + "' | node "
-            out = nil
-            Open3.popen3(cmd) {|stdin, stdout, stderr, wait_thr|
-              pid = wait_thr.pid # pid of the started process.
-              out = stdout.gets(nil)
-              exit_status = wait_thr.value # Process::Status object returned.
-            }
-            txhash = out.match(/transactionHash: '([^']+)'/)[1] rescue nil
-            if !txhash.nil?
-                meta["dlt-response"] = {"bellecour-txhash": txhash}
-            end
+            payload = '{"id":"' + id.to_s + '","dri":"' + dri.to_s + '"}'
+            meta = storage_Bellecour(payload, meta)
         when "Convex"
             payload = "id:" + id.to_s + ",dri:" + dri.to_s
             meta = storage_Convex(payload, meta)
-puts "Meta Convex (new) --------"
-puts meta.to_json
         end
         errors = nil
         id = nil
@@ -179,12 +150,8 @@ puts meta.to_json
         else
             @store.item = data.to_json
             @store.meta = meta.to_json
-puts "stored"
-puts meta.to_json
             if @store.save
                 id = @store.id.to_s
-puts "check"
-puts @store.meta.to_json
             else
                 errors = @store.errors
             end
@@ -217,40 +184,11 @@ puts @store.meta.to_json
 
         case on_chain_storage
         when "Bellecour"
-            config_chain_url = ENV["CHAIN_URL"] || "https://bellecour.iex.ec"
-            config_contract_address = ENV["CONTRACT_ADDRESS"] || "0xF31A125fb44E0c2dca45c2665F272e9fc09f92AE"
-            file_path = Rails.root.join('lib', 'contract_abi.json')
-            config_contract_abi = ENV["CONTRACT_ABI"] || File.read(file_path)
-            config_contract_function = ENV["CONTRACT_FUNCTION"] || "StoreInLogs"
-            config_payload = 'id:' + id.to_s + ',dri:' + dri.to_s
-            config_private_key = ENV["BELLECOUR_PRIVATE_KEY"]
-
-            file_path = Rails.root.join('lib', 'contract.js')
-            content = File.read(file_path)
-            content = content.gsub("$CHAIN_URL", config_chain_url.to_s)
-            content = content.gsub("$CONTRACT_ADDRESS", config_contract_address.to_s)
-            content = content.gsub("$CONTRACT_ABI", config_contract_abi.to_s)
-            content = content.gsub("$CONTRACT_FUNCTION", config_contract_function.to_s)
-            content = content.gsub("$PAYLOAD", config_payload.to_s)
-            content = content.gsub("$PRIVATE_KEY", config_private_key.to_s)
-
-            require 'open3'
-            cmd = "npm i web3 && echo '" + content + "' | node "
-            out = nil
-            Open3.popen3(cmd) {|stdin, stdout, stderr, wait_thr|
-              pid = wait_thr.pid # pid of the started process.
-              out = stdout.gets(nil)
-              exit_status = wait_thr.value # Process::Status object returned.
-            }
-            txhash = out.match(/transactionHash: '([^']+)'/)[1] rescue nil
-            if !txhash.nil?
-                meta["dlt-response"] = {"bellecour-txhash": txhash}
-            end
+            payload = '{"id":"' + id.to_s + '","dri":"' + dri.to_s + '"}'
+            meta = storage_Bellecour(payload, meta)
         when "Convex"
             payload = "id:" + id.to_s + ",dri:" + dri.to_s
             meta = storage_Convex(payload, meta)
-puts "Meta Convex (update) --------"
-puts meta.to_json
         end
 
         errors = nil
@@ -258,7 +196,7 @@ puts meta.to_json
         case off_chain_storage
         when "Semantic Container"
             semcon_url = col_data["storage"]["url"]
-            @store.meta = meta
+            @store.meta = meta.to_json
             @store.dri = dri
             @store.key = key
             if @store.save
@@ -310,14 +248,8 @@ puts meta.to_json
             @store.meta = meta.to_json
             @store.dri = dri
             @store.key = key
-
-puts "stored"
-puts meta.to_json
-
             if @store.save
                 id = @store.id.to_s
-puts "check"
-puts @store.meta.to_json
             else
                 errors = @store.errors
             end
@@ -327,6 +259,40 @@ puts @store.meta.to_json
         else
             return {"id": id.to_s}
         end
+    end
+
+    def storage_Bellecour(payload, meta)
+        config_chain_url = ENV["CHAIN_URL"] || "https://bellecour.iex.ec"
+        config_contract_address = ENV["CONTRACT_ADDRESS"] || "0xF31A125fb44E0c2dca45c2665F272e9fc09f92AE"
+        file_path = Rails.root.join('lib', 'contract_abi.json')
+        config_contract_abi = ENV["CONTRACT_ABI"] || File.read(file_path)
+        config_contract_function = ENV["CONTRACT_FUNCTION"] || "StoreInLogs"
+        config_payload = payload
+        config_private_key = ENV["BELLECOUR_PRIVATE_KEY"]
+
+        file_path = Rails.root.join('lib', 'contract.js')
+        content = File.read(file_path)
+        content = content.gsub("$CHAIN_URL", config_chain_url.to_s)
+        content = content.gsub("$CONTRACT_ADDRESS", config_contract_address.to_s)
+        content = content.gsub("$CONTRACT_ABI", config_contract_abi.to_s)
+        content = content.gsub("$CONTRACT_FUNCTION", config_contract_function.to_s)
+        content = content.gsub("$PAYLOAD", config_payload.to_s)
+        content = content.gsub("$PRIVATE_KEY", config_private_key.to_s)
+
+        require 'open3'
+        cmd = "npm i web3 && echo '" + content + "' | node "
+        out = nil
+        Open3.popen3(cmd) {|stdin, stdout, stderr, wait_thr|
+          pid = wait_thr.pid # pid of the started process.
+          out = stdout.gets(nil)
+          exit_status = wait_thr.value # Process::Status object returned.
+        }
+        txhash = out.match(/transactionHash: '([^']+)'/)[1] rescue nil
+        if !txhash.nil?
+            meta["dlt-response"] = {"bellecour-txhash": txhash}
+        end
+
+        return meta
     end
 
     def storage_Convex(payload, meta)
