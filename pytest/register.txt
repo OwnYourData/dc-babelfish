@@ -1,0 +1,27 @@
+01_Organisations
+^^^^^^^^^^^^^^^^
+02 Read Organisation
+03 List all Organisations
+01 Create Organisation
+04 Update Organisation
+05 Delete Organisation
+06 Retrieve User List for Organisation
+
+
+02_Users
+^^^^^^^^
+01 Read User
+02 Create user
+03 Wallet
+04 Update User
+05 Delete User
+
+
+03_Services
+^^^^^^^^^^^
+01 Create Service
+02 Read Service
+03 Service Catlaogue
+04 Query Services
+05!Update Service
+06!Delete Service

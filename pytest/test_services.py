@@ -9,7 +9,7 @@ from pathlib import Path
 # test groups
 # 01 - organisations
 # 02 - users
-# 03 - services
+# 03 - services <- current
 
 # requires
 # $MASTER_TOKEN

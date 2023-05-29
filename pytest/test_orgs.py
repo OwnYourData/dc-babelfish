@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 # test groups
-# 01 - organisations
+# 01 - organisations <- current
 # 02 - users
 # 03 - services
 
