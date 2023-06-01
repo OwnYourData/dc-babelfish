@@ -54,5 +54,6 @@ scope '/' do
     match 'integration/match_up',       to: 'integrations#match_up',   via: 'post'
     match 'integration/match_d2a',      to: 'integrations#match_d2a',  via: 'post'
     match 'integration/create_d2a',     to: 'integrations#create_d2a', via: 'post'
+    match 'integration/accept_d2a',     to: 'integrations#accept_d2a', via: 'post'
 
 end

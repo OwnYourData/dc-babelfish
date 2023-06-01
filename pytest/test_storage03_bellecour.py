@@ -28,8 +28,8 @@ if gw_host == "http://localhost:3100":
     # os.environ["SEMCON_URL"] = "http://192.168.178.60:3200" # Vöslau
     os.environ["SEMCON_URL"] = "http://10.0.0.7:3200" # Mönichwald
 else:
-    os.environ["BC_COLLECTION_ID"] = "252"
-    os.environ["BC_OBJECT_ID"] = "256"
+    os.environ["BC_COLLECTION_ID"] = "413"
+    os.environ["BC_OBJECT_ID"] = "472"
     os.environ["SEMCON_URL"] = "https://storage-oc3.data-container.net"
 
 def envsubst(text):
@@ -56,8 +56,8 @@ def test_01_organisations(fp, input):
 # export BC_COLLECTION_ID=16
 # export BC_OBJECT_ID=17
 #
-# export BC_COLLECTION_ID=252
-# export BC_OBJECT_ID=256
+# export BC_COLLECTION_ID=413
+# export BC_OBJECT_ID=472
 
 # cat 07_input/01_create_col.doc | envsubst | curl -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d @- -X POST $GW_HOST/collection/
 # cat 07_input/02_create_obj.doc | envsubst | curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d @- -X POST $GW_HOST/object/

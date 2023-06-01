@@ -24,4 +24,20 @@ class IntegrationsController < ApplicationController
                status: 200
     end
 
+    def accept_d2a
+        render json: {
+                    "collection-id": 448,
+                    "user": {
+                        "user-id": 447,
+                        "name": "Beekeeper+Data+Sharing+user",
+                        "organization-id": 95,
+                        "oauth": {
+                            "client-id": "7vWWlxI0dg4qGDtdmiYK16RpExYcFyUOiHJ_zEKCpvA",
+                            "client-secret": "EWnwgHL3ADIDBuIJAIUte09goQJAP4o4zDpd5VAebKM"
+                        }
+                    }
+                },
+               status: 200
+    end
+
 end

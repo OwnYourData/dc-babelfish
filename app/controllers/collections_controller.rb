@@ -126,10 +126,25 @@ class CollectionsController < ApplicationController
         retVal = []
         @obj.each do |r|
             obj_data = r.item
-            if !(obj_data.is_a?(Hash) || obj_data.is_a?(Array))
-                obj_data = JSON.parse(obj_data) rescue nil
-            end            
-            retVal << {"object-id": r.id, "name": obj_data["name"].to_s}
+            if !obj_data.nil?
+                if !(obj_data.is_a?(Hash) || obj_data.is_a?(Array))
+                    obj_data = JSON.parse(obj_data) rescue nil
+                end
+                obj_meta = r.meta
+                if !(obj_meta.is_a?(Hash) || obj_meta.is_a?(Array))
+                    obj_meta = JSON.parse(obj_meta) rescue nil
+                end
+                if !obj_data.nil? && !obj_meta.nil?
+                    if obj_meta["delete"].nil? || !obj_meta["delete"]
+                        obj_name = obj_data["name"] rescue nil
+                        if obj_name.to_s == ""
+                            retVal << {"object-id": r.id}
+                        else
+                            retVal << {"object-id": r.id, "name": obj_name}
+                        end
+                    end
+                end
+            end
         end
         render json: retVal,
                status: 200

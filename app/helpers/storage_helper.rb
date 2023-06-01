@@ -267,7 +267,7 @@ module StorageHelper
         file_path = Rails.root.join('lib', 'contract_abi.json')
         config_contract_abi = ENV["CONTRACT_ABI"] || File.read(file_path)
         config_contract_function = ENV["CONTRACT_FUNCTION"] || "StoreInLogs"
-        config_payload = payload
+        config_payload = payload.to_json
         config_private_key = ENV["BELLECOUR_PRIVATE_KEY"]
 
         file_path = Rails.root.join('lib', 'contract.js')
@@ -282,6 +282,7 @@ module StorageHelper
         require 'open3'
         cmd = "npm i web3 && echo '" + content + "' | node "
         out = nil
+        exit_status = nil
         Open3.popen3(cmd) {|stdin, stdout, stderr, wait_thr|
           pid = wait_thr.pid # pid of the started process.
           out = stdout.gets(nil)
