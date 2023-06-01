@@ -7,7 +7,7 @@ Gateway API implementation for the NGI ONTOCHAIN research project
 
 &nbsp;    
 
-## SemCon Issues
+## Issues
 
 Please report bugs and suggestions for new features using the [GitHub Issue-Tracker](https://github.com/OwnYourData/dc-babelfish/issues) and follow the [Contributor Guidelines](https://github.com/twbs/ratchet/blob/master/CONTRIBUTING.md).
 
