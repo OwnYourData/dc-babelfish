@@ -38,7 +38,7 @@ def envsubst(text):
 
 cwd = os.getcwd()
 @pytest.mark.parametrize('input',  sorted(glob.glob(cwd+'/08_input/*.doc')))
-def test_01_organisations(fp, input):
+def test_storage04_convex(fp, input):
     fp.allow_unregistered(True)
     with open(input) as f:
         content = f.read()

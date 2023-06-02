@@ -29,7 +29,7 @@ def envsubst(text):
 
 cwd = os.getcwd()
 @pytest.mark.parametrize('input',  sorted(glob.glob(cwd+'/01_input/*.doc')))
-def test_01_organisations(fp, input):
+def test_orgs(fp, input):
     fp.allow_unregistered(True)
     with open(input) as f:
         content = envsubst(f.read())
