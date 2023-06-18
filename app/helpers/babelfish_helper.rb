@@ -14,7 +14,8 @@ module BabelfishHelper
         user_name = @oauth.name
         Store.where(key: "user_" + org_id.to_s).each do |user|
             un = JSON.parse(user.item)["name"].to_s rescue ""
-            if un == user_name
+            del = JSON.parse(user.meta)["delete"].to_s.downcase rescue ""
+            if un == user_name && del != "true"
                 id = user.id
             end
         end

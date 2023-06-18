@@ -132,7 +132,7 @@ module StorageHelper
                 # write to AWS
                 bucket_name = ENV["AWS_S3_BUCKET"] || 'ontochain'
                 object_key = dri.to_s + '.json'
-                json_object = { id: id, data: data.to_json, meta: meta.to_json, dri: dri }
+                json_object = { id: id, data: data, meta: meta, dri: dri }
                 uploader = S3JsonUploader.new(bucket_name)
                 uploader.upload(json_object, object_key)
                 meta["storage-response"] = {
