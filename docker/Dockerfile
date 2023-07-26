@@ -8,7 +8,7 @@ RUN apt-get update && \
 	curl -sL https://deb.nodesource.com/setup_16.x | bash - && \
 	apt -y install nodejs && \
 	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN npm init -y && npm i web3
+RUN npm init -y && npm i web3@1.10.0
 COPY . .
 RUN bundle install && bundle update
 

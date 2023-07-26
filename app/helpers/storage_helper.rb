@@ -280,7 +280,7 @@ module StorageHelper
         content = content.gsub("$PRIVATE_KEY", config_private_key.to_s)
 
         require 'open3'
-        cmd = "npm i web3 && echo '" + content + "' | node "
+        cmd = "npm i web3@1.10.0 && echo '" + content + "' | node "
         out = nil
         exit_status = nil
         Open3.popen3(cmd) {|stdin, stdout, stderr, wait_thr|

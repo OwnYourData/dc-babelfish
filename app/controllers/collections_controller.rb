@@ -7,14 +7,19 @@ class CollectionsController < ApplicationController
     before_action -> { doorkeeper_authorize! :read, :write, :admin }, only: [:read, :list, :objects]
 
     def create
-        data = params.except(:controller, :action, :collection)
+        data = params.permit!.except(:controller, :action, :collection).transform_keys(&:to_s)
         if !data["_json"].nil?
             data = data["_json"]
         end
         meta = {
             "type": "collection",
-            "organization-id": doorkeeper_org
+            "organization-id": doorkeeper_org,
+            "delete": false
         }
+        if !data["meta"].nil?
+            meta = meta.merge(data["meta"])
+            data = data.except("meta")
+        end
         dri = Oydid.hash(Oydid.canonical({"content": data, "meta": meta}))
         @store = Store.find_by_dri(dri)
         if @store.nil?
@@ -29,7 +34,7 @@ class CollectionsController < ApplicationController
 
     def update
         # input
-        id = params[:id]
+        id = params.permit![:id]
         data = params.permit!.except(:controller, :action, :collection, :id).transform_keys(&:to_s)
         if !data["_json"].nil?
             data = data["_json"]
